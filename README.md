@@ -1,16 +1,37 @@
 # squib
 
-Voice lines and app lists for squib, the pixel buddy that lives on your phone.
+Squib, the pixel squid that lives on your phone, and everything he says.
+
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.5). It installs over earlier versions.
+- **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
+- **The app's code:** `app/`, a normal Android project.
+
+## Updating his lines
 
 The app downloads `squib.json` from this repo when it starts and every 6 hours after that. It keeps a copy on the phone, so it still works offline. To check right away, open squib's settings and tap "check now". GitHub can take up to about 5 minutes to serve a new version of the file.
+
+The same lines are also built into the app (`tools/gen_lines.py` copies them in at build time), so he has them on first start and offline.
+
+## Building the app
+
+Two ways, same result:
+
+- **With Android Studio or the Android SDK:** `./gradlew assembleDebug`. The APK lands in `app/build/outputs/apk/debug/`.
+- **Without the Android SDK:** `tools/build-apk.sh`. Needs Java 17+, python3, curl and unzip. Writes `apk/Squib.apk`.
+
+Both sign with `signing/squib-debug.keystore`, the key every Squib build has used, so a new build installs over the one on your phone without losing his stats. It's a public debug key: fine for sideloading, not for the Play Store.
+
+`tools/sim/run.sh` runs squib on a computer with no phone: `sheets` draws a picture of every activity into `build/sim/`, and `stress 8` simulates 8 hours of random use and fails on any crash.
 
 ## squib.json
 
 ```json
 {
   "version": 1,
+  "settings": { "scrollCheckMinutes": 15, ... },
   "lines": { "BOOP": ["boop!", "hey!"], ... },
-  "apps":  { "WATCH": ["com.netflix.mediaclient", ...], ... }
+  "apps":  { "WATCH": ["com.netflix.mediaclient", ...], ... },
+  "minecraft": ["com.mojang.minecraftpe", ...]
 }
 ```
 
@@ -20,16 +41,21 @@ The app downloads `squib.json` from this repo when it starts and every 6 hours a
 |---|---|---|
 | `scrollCheckMinutes` | 15 | minutes between scroll check-ins |
 | `activityGapMin` / `activityGapMax` | 25 / 70 | seconds between his activities (a random time in between) |
+| `fidgetGapMin` / `fidgetGapMax` | 12 / 35 | seconds between quick fidgets (stretching, spinning and so on) |
+| `snowEvery` | 0.9 | seconds between snowflakes in December. `0` turns snow off |
 
 ### lines
 
-Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines.
+There are 1153 lines in 81 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+
+**No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
 | group | when he says it |
 |---|---|
 | THOUGHTS, MUTTERS, JOKES, FACTS, STATS | random chatter |
 | MORNING, AFTERNOON, EVENING, NIGHT | random chatter, depending on time of day |
 | OPENERS | sometimes stuck in front of chatter ("hm. ", "ok so, ") |
+| PARTY, WINTER, SPOOKY | extra chatter on special days, in December, and Oct 20 to 31 |
 | BOOP | when tapped |
 | SPAM | when tapped 5 times fast |
 | GRABBED | when picked up |
@@ -47,12 +73,14 @@ Each group **replaces** the built-in lines for that group. A group that's missin
 | NAV_ENTER, NAV | map apps |
 | READ_ENTER, READ | reading apps |
 | MINECRAFT | in Minecraft, when he switches items or starts mining |
-| BALL, PLANE, BUBBLES, BOOK, YOYO, DANCE, WAVE, BUTTERFLY, NAP, TEA | when he starts that activity (not every time) |
+| ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
+| one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE | moments during activities |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
 
-Stick to plain keyboard characters. The pixel font has no emoji or accented letters, so those show up as `?`.
+Stick to plain keyboard characters. The pixel font has no emoji or accented letters, so those show up as `?`. `tools/gen_lines.py` checks for this.
 
 ### minecraft
 
@@ -70,7 +98,7 @@ Bedtime nagging and the 50-minute break reminder happen in every mode except HID
 
 ### everything else (HOME)
 
-Your home screen and any app not listed below. Walks along the bottom of the screen, wanders, hops, looks around.
+Your home screen and any app not listed below. Walks along the bottom of the screen, wanders, hops, looks around, and does activities and fidgets (see below).
 
 - Talks every 35 seconds to 3 minutes: thoughts, mutters, jokes, facts, stats, time-of-day lines, and HUNGRY when he hasn't eaten in 2 hours.
 
@@ -88,7 +116,7 @@ Walks to the bottom-right corner and sits down with popcorn. Kernels pop out now
 
 ### music (MUSIC)
 
-Walks along the bottom. When standing still he bops to a beat and music notes float up.
+Walks along the bottom. When standing still he bops to a beat and music notes float up. Dancing and guitar happen much more often here.
 
 - Says a MUSIC line every 4 to 8 minutes.
 
@@ -159,7 +187,7 @@ Apps added in the `apps` section of `squib.json` go on top of these lists.
 
 ## Activities
 
-Every 25 to 70 seconds (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do. About half the time he says a line from that activity's group when he starts.
+Every 25 to 70 seconds (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do. He won't pick any of his last 3 activities. About half the time he says a line from that activity's group when he starts. The **trick** button in his settings makes him do one right away.
 
 | activity | what happens | where |
 |---|---|---|
@@ -171,10 +199,29 @@ Every 25 to 70 seconds (`activityGapMin` / `activityGapMax`), when he's standing
 | DANCE | dances: arms swapping, hopping on the beat, music notes | anywhere, much more often in music apps |
 | WAVE | waves at you | anywhere |
 | BUTTERFLY | a butterfly flies in and circles his head. He hops trying to catch it, then it flies away | anywhere |
-| NAP | takes a 20 to 45 second nap. Tap him to wake him | anywhere |
-| TEA | drinks a mug of tea. Steam rises, and he takes sips | anywhere |
+| NAP | takes a 20 to 45 second nap. Tap him to wake him | anywhere, more often at night |
+| TEA | drinks a mug of tea. Steam rises, and he takes sips | anywhere, more often in reading apps |
+| GUITAR | strums a little guitar, music notes float up | anywhere, much more often in music apps |
+| JUGGLE | juggles three balls in a loop over his head. Sometimes drops them all at the end | anywhere |
+| KITE | flies a kite high above him on a long string, with a bow tail | bottom of the screen only |
+| FISHING | casts a line down from his cloud and waits. Gets a bite, reels in a shrimp (eats it), a fish (throws it back) or an old boot (annoyed) | only when sitting on a cloud |
+| RAIN | a rain cloud appears over him. He gets grumpy, opens an umbrella, and when the rain stops there's a rainbow | anywhere |
+| SKATE | rides a skateboard back and forth across the screen with a kickflip after each run | bottom of the screen only |
+| ICECREAM | eats a strawberry ice cream in three licks. It drips | anywhere |
+| BALLOON | holds a balloon (random colour) and bounces. At the end it pops, or he lets go and it floats away | anywhere |
+| MAGIC | puts a top hat on the floor, taps it with a wand, and pulls out a shrimp, a dove, a tiny squid or flowers. Then the hat vanishes | anywhere |
+| STARGAZE | looks through a telescope while shooting stars go by | bottom of the screen, 9pm to 5am only |
+| SNEEZE | "ah... ah..." then sneezes ink and shoots backwards | anywhere |
+| JUMPROPE | skips rope, hopping each time it goes under him | bottom of the screen only |
+| PAINT | paints a picture on an easel (a shrimp, the sun, a heart, himself or a landscape), then shows it off | anywhere |
+| SELFIE | takes three selfies with a tiny phone, with flash | anywhere |
+| PARTY | throws confetti. Only on special days (see below) | anywhere |
 
 He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing.
+
+### Fidgets
+
+Between activities, every 12 to 35 seconds (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking) or YAWN. He only says something about 1 time in 8.
 
 ## Minecraft
 
@@ -186,4 +233,14 @@ In Minecraft (and the launchers in the `minecraft` list) he gets diamond gear. O
   - **swing:** raises the item and strikes, with a little swoosh
   - **mine:** chops repeatedly, with bits of dirt and stone flying (pickaxe, axe, shovel)
   - **show off:** holds it up high, with sparkles (always for the diamond)
+  - **mine ore:** a block of diamond ore appears next to him. He mines it (it cracks more with each hit), it breaks, and he holds up the diamond
+  - **torch:** places a torch on the ground. It flickers for 25 to 40 seconds. Up to 3 at a time
 - Says MINECRAFT lines sometimes when switching items or starting to mine.
+- The trick button in Minecraft makes him mine ore or place a torch.
+
+## Special days and seasons
+
+- **Party days:** January 1st, and his day 7, 30, 50, then every 50 days from day 100, and every 365 days. He wears a party hat all day, throws confetti, and says PARTY lines.
+- **December:** winter hat, snow falling around him (not on clouds or while watching), and WINTER lines.
+- **October 20 to 31:** witch hat and SPOOKY lines.
+- Hats come off in Minecraft (he wears the diamond helmet instead).

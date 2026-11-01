@@ -1,0 +1,44 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.squib.buddy"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.squib.buddy"
+        minSdk 26
+        targetSdk 34
+        // Bump both for every release. The APK in apk/ and the README say which version is current.
+        versionCode 6
+        versionName "1.5"
+    }
+
+    signingConfigs {
+        // The same key every Squib build has used, so new builds install over the one on the phone.
+        // It's a public debug key, fine for sideloading, not for the Play Store.
+        squib {
+            storeFile rootProject.file("signing/squib-debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.squib
+        }
+        release {
+            // Lines.get/Lines.set and Remote read fields by name, so don't shrink or rename code.
+            minifyEnabled false
+            signingConfig signingConfigs.squib
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
