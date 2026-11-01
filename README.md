@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.6). It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.7). It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -42,11 +42,12 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 | `scrollCheckMinutes` | 15 | minutes between scroll check-ins |
 | `activityGapMin` / `activityGapMax` | 1800 / 3600 | seconds between his activities (a random time in between). 30 to 60 minutes, so at most 2 an hour |
 | `fidgetGapMin` / `fidgetGapMax` | 600 / 1200 | seconds between quick fidgets. 10 to 20 minutes, so at most 1 every 10 minutes |
+| `bedtimeStart` / `bedtimeEnd` | 0 / 5 | hours when he sleeps (24-hour clock). Can wrap past midnight, e.g. 23 / 6 |
 | `snowEvery` | 0.9 | seconds between snowflakes in December. `0` turns snow off |
 
 ### lines
 
-There are 1271 lines in 110 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1289 lines in 112 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -65,6 +66,8 @@ There are 1271 lines in 110 groups. Each group **replaces** the built-in lines f
 | BREAK | after 50 minutes of phone use |
 | LATE | 11pm to 1am bedtime nagging |
 | LATE_NIGHT | 1am to 5am bedtime nagging |
+| BEDTIME | when he goes to sleep for the night |
+| WOKE_NAG | when he wakes up at night to tell you to go to bed, or when the screen comes back on at night |
 | WATCH_ENTER, WATCH, WATCH_LONG | video apps (WATCH_LONG: after 2 hours) |
 | MUSIC_ENTER, MUSIC | music apps |
 | SCROLL, SCROLL_LONG | scrolling apps. SCROLL_LONG is said every `scrollCheckMinutes` (15) of scrolling, going through the lines in order and starting over at the end. `{mins}` becomes how long you've been scrolling |
@@ -96,6 +99,14 @@ Adds apps to a type. These get added on top of the built-in list. Types: `WATCH`
 He switches mode based on the app you have open. This needs usage access turned on, and the "app modes" switch in his settings. Switching into a mode (other than HIDE) has a 30% chance of a `<MODE>_ENTER` line, at most once per 10 minutes per mode.
 
 Bedtime nagging and the 50-minute break reminder happen in every mode except HIDE.
+
+## Bedtime
+
+From midnight to 5am (`bedtimeStart` / `bedtimeEnd`) he goes to sleep, in every mode (with his popcorn if you're watching something, on his cloud if he's up top). No activities, fidgets or chatter while it's bedtime. In Minecraft he stops swinging and mining.
+
+He wakes up now and then to tell you to go to bed (a WOKE_NAG line, or a LATE / LATE_NIGHT one): about every 20 to 30 minutes until 1am, then about every 11 to 19 minutes. He goes back to sleep about 15 seconds later.
+
+Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line. A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for about a minute, then lies down again.
 
 ### everything else (HOME)
 

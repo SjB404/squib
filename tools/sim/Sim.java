@@ -228,7 +228,8 @@ public class Sim {
         Fun.nextFidgetAt = v.t + 5;
         List<Double> actStarts = new ArrayList<>(), fidgetStarts = new ArrayList<>();
         v.nextChatAt = v.t + 5;
-        Fun.nextSeasonCheck = 0;
+        Fun.nextSeasonCheck = 1e18; // seasons frozen; bedtime alternates below so both day and night get tested
+        boolean night = false;
         long frames = (long) (hours * 3600 * 30);
         Map<String, List<Double>> said = new HashMap<>();
         String last = null;
@@ -253,6 +254,13 @@ public class Sim {
             lastAct = Fun.act;
             if (Fun.mcAct != 0 && i % 30 == 0) {
                 mcActs++;
+            }
+            if (i % (30 * 60 * 90) == 0) { // every 90 simulated minutes, switch between day and night
+                Fun.bedtime = night;
+                night = !night;
+            }
+            if (i % (30 * 60 * 7) == 0 && Fun.bedtime) { // the screen goes off and on now and then
+                v.onScreenOn(r.nextBoolean() ? 30 : 900);
             }
             if (v.t >= nextEvent) {
                 nextEvent = v.t + 20 + r.nextDouble() * 240;

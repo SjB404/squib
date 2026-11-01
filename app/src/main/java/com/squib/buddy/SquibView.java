@@ -141,6 +141,9 @@ final class SquibView extends View {
     boolean watchNudged;
     double watchSecs;
     double zzzIn;
+    /** When he lies down for the night (-1: not scheduled). See {@link #bedtime()}. */
+    double bedAt = -1;
+    boolean sleptTonight;
     static final int[] FONT_SIZES = {9, 11, 14};
     static final String[] SHRIMP = {"...pppp..", ".pplllppk", "pp.....a.", "p.....a..", "tt......."};
     static final String[] HEART = {".hh.hh.", "hwhhhhh", "hhhhhhh", ".hhhhh.", "..hhh..", "...h..."};
@@ -400,6 +403,7 @@ final class SquibView extends View {
         }
         this.drawnHidden = false;
         wellbeing(min);
+        bedtime();
         move(min);
         face(min);
         body(min);
@@ -527,7 +531,7 @@ final class SquibView extends View {
     }
 
     void decide() {
-        if (this.chatty && this.t >= this.nextChatAt && this.speech == null) {
+        if (this.chatty && this.t >= this.nextChatAt && this.speech == null && !Fun.bedtime) {
             chatter();
             this.nextChatAt = this.t + chatGap();
             this.nextDecision = (this.rng.nextDouble() * 6.0d) + 4.0d;
@@ -666,7 +670,18 @@ final class SquibView extends View {
             double d6 = this.t;
             if (d6 >= this.nextLateCheckAt) {
                 this.nextLateCheckAt = d6 + ((i3 == 23 ? 40.0d : i3 == 0 ? 25.0d : 15.0d) * 60.0d * ((this.rng.nextDouble() * 0.5d) + 0.75d));
-                say(Pick.one((i3 >= 23 || i3 < 1) ? Lines.LATE : Lines.LATE_NIGHT), 2.0d);
+                String[] nag = (i3 >= 23 || i3 < 1) ? Lines.LATE : Lines.LATE_NIGHT;
+                if (Fun.bedtime && this.motion == Motion.SLEEP) {
+                    // wake up just long enough to nag, then back to sleep
+                    setMotion(Motion.IDLE);
+                    this.surpriseFor = 0.4d;
+                    kick(-1.5d);
+                    this.bedAt = this.t + 14.0d;
+                    if (this.rng.nextDouble() < 0.7d) {
+                        nag = Lines.WOKE_NAG;
+                    }
+                }
+                say(Pick.one(nag), 2.0d);
             }
         }
         if (this.chatty && this.hungerSecs > 14400.0d && this.t - this.lastHungry > 1800.0d && this.motion == Motion.IDLE && this.speech == null) {
@@ -675,10 +690,58 @@ final class SquibView extends View {
         }
     }
 
+    /**
+     * Bedtime (midnight to 5am by default, see Fun.bedtimeStart/End): he goes to sleep and stays asleep.
+     * Waking him (tap, screen on, or his own bedtime nag) keeps him up for a bit, then he lies down again.
+     */
+    void bedtime() {
+        if (!Fun.bedtime) {
+            this.bedAt = -1.0d;
+            if (this.sleptTonight && this.motion == Motion.SLEEP && Fun.act != Fun.NAP) {
+                setMotion(Motion.IDLE);
+            }
+            this.sleptTonight = false;
+            return;
+        }
+        if (this.motion == Motion.SLEEP) {
+            this.bedAt = -1.0d;
+            return;
+        }
+        if (this.dragging || this.petting || this.touching || this.shrimpOn || this.motion == Motion.FALL
+                || this.motion == Motion.DRAG || this.motion == Motion.JET || this.motion == Motion.CHASE) {
+            return;
+        }
+        if (this.bedAt < 0.0d) {
+            this.bedAt = this.t + (this.sleptTonight ? (this.rng.nextDouble() * 30.0d) + 45.0d : (this.rng.nextDouble() * 10.0d) + 5.0d);
+            return;
+        }
+        if (this.t >= this.bedAt && (this.motion == Motion.IDLE || this.motion == Motion.WANDER) && (this.speech == null || this.sleptTonight)) {
+            Fun.end(this);
+            if (!this.sleptTonight && this.speech == null) {
+                say(Pick.one(Lines.BEDTIME), 1.0d);
+            }
+            this.sleptTonight = true;
+            this.bedAt = -1.0d;
+            this.zzzIn = 1.0d;
+            setMotion(Motion.SLEEP);
+        }
+    }
+
     void onScreenOn(double d) {
         this.lastT = SystemClock.elapsedRealtime() / 1000.0d;
         if (d > 300.0d) {
             this.activeSecs = 0.0d;
+        }
+        if (Fun.bedtime) {
+            // at night only a long screen-off wakes him, and he always nags about it
+            if (d > 600.0d && visible()) {
+                if (this.motion == Motion.SLEEP) {
+                    setMotion(Motion.IDLE);
+                }
+                this.surpriseFor = 0.6d;
+                say(Pick.one(Lines.WOKE_NAG), 0.0d);
+            }
+            return;
         }
         if (this.motion == Motion.SLEEP) {
             setMotion(Motion.IDLE);
@@ -970,7 +1033,7 @@ final class SquibView extends View {
         if (this.motion == Motion.SLEEP) {
             setMotion(Motion.IDLE);
             this.surpriseFor = 0.6d;
-            say("huh? i'm up! i'm up.", 0.0d);
+            say(Fun.bedtime ? Pick.one(Lines.WOKE_NAG) : "huh? i'm up! i'm up.", 0.0d);
         } else {
             if (this.taps.size() >= 5) {
                 this.taps.clear();

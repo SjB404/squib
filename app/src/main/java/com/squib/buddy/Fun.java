@@ -64,6 +64,9 @@ final class Fun {
     /** Seconds between fidgets. 10 to 20 minutes: at most 6 an hour. */
     static double fidgetGapMin = 600;
     static double fidgetGapMax = 1200;
+    /** Hours when he sleeps (24-hour clock, can wrap past midnight: 23 to 6 works). */
+    static double bedtimeStart = 0;
+    static double bedtimeEnd = 5;
     /** Seconds between snowflakes near squib in December. 0 turns snow off. */
     static double snowEvery = 0.9;
 
@@ -113,7 +116,7 @@ final class Fun {
     static String hat;
     static String[] seasonLines;
     static double nextSeasonCheck, nextSnow;
-    static boolean partyDay, december, night;
+    static boolean partyDay, december, night, bedtime;
 
     // ---------- scroll check-ins ----------
     static double lastScroll;
@@ -347,7 +350,7 @@ final class Fun {
             }
         }
         if (inMc) {
-            mcTick(v, t, busy);
+            mcTick(v, t, busy || motion == SquibView.Motion.SLEEP);
             return;
         }
         if (act != NONE) {
@@ -358,7 +361,7 @@ final class Fun {
             }
             return;
         }
-        if (busy || motion != SquibView.Motion.IDLE || v.seated || kind == Apps.Kind.WATCH || kind == Apps.Kind.HIDE) {
+        if (busy || motion != SquibView.Motion.IDLE || v.seated || kind == Apps.Kind.WATCH || kind == Apps.Kind.HIDE || bedtime) {
             return;
         }
         if (t >= nextAt) {
@@ -2243,7 +2246,7 @@ final class Fun {
 
     static void season(SquibView v, double t, double dt) {
         if (t >= nextSeasonCheck) {
-            nextSeasonCheck = t + 60;
+            nextSeasonCheck = t + 20;
             Calendar c = Calendar.getInstance();
             int month = c.get(Calendar.MONTH), day = c.get(Calendar.DAY_OF_MONTH), hour = c.get(Calendar.HOUR_OF_DAY);
             int age = v.day();
@@ -2252,6 +2255,8 @@ final class Fun {
             december = month == Calendar.DECEMBER;
             boolean spooky = month == Calendar.OCTOBER && day >= 20;
             night = hour >= 21 || hour < 5;
+            double h = hour + c.get(Calendar.MINUTE) / 60.0;
+            bedtime = bedtimeStart <= bedtimeEnd ? (h >= bedtimeStart && h < bedtimeEnd) : (h >= bedtimeStart || h < bedtimeEnd);
             hat = partyDay ? "PARTY_HAT" : december ? "WINTER_HAT" : spooky ? "WITCH_HAT" : null;
             seasonLines = partyDay ? Lines.PARTY : december ? Lines.WINTER : spooky ? Lines.SPOOKY : null;
         }

@@ -31,7 +31,10 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - No Java lambdas or method references: `tools/build-apk.sh` uses dex2jar, which can't handle them. Use anonymous classes. Keep Java 8 syntax.
 - Don't turn on code shrinking (`minifyEnabled`): `Lines`, `Remote` and `Fun.rows()` look up fields by name.
 - Don't add an accessibility service, or SMS / notification-listener permissions. Play Protect blocks sideloaded apps that ask for them. (An earlier keyboard-dodge feature was removed for this reason.)
+- The user keeps click-through on almost all the time, so taps pass straight through squib. Don't build features that only work by tapping, petting or dragging him; use timers, app modes, the screen turning on, or the buttons in his settings / notification instead.
+- Bedtime (midnight to 5am by default, `Fun.bedtimeStart/End`): he sleeps, and wakes now and then to nag (`SquibView.bedtime()` and the late check in `wellbeing()`). New activities must not start during bedtime.
 - Minecraft gear is diamond only, never netherite.
 - Draw original pixel art only. No characters or logos from games, films or brands (so no creepers, for example).
 - For a release: bump `versionCode` and `versionName` in `app/build.gradle`, rebuild, replace `apk/Squib.apk`, update the version and any changed behaviour in `README.md`.
-- Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`.
+- Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`. `SIM_OPTS="-Dreal=1" tools/sim/run.sh stress 12` runs with the real timings and reports the most activities in any hour and fidgets in any 10 minutes (limits: 2 and 1).
+- Activities are limited to 2 an hour and fidgets to 1 per 10 minutes (the user asked for this). Keep new activities within those limits.

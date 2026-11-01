@@ -1391,6 +1391,26 @@ final class Lines {
             "*whistles*",
             "*whistles a little tune*",
             "fweet fweet."};
+    static String[] BEDTIME = {
+            "ok. bedtime. for both of us.",
+            "*yawn* i'm going to sleep. you should too.",
+            "goodnight. phone down soon, ok?",
+            "lights out. well, mine are.",
+            "it's past midnight. squid's going to bed.",
+            "sleep time. see you in the morning. hopefully not before."};
+    static String[] WOKE_NAG = {
+            "*wakes up* it's {time}. why are you still up?",
+            "huh? oh. it's {time}. go to sleep.",
+            "*yawn* you're still here? it's {time}.",
+            "i was dreaming about shrimp. it's {time}. bed.",
+            "*rubs eyes* {time}?? go to sleep.",
+            "zzz- huh? still on your phone? it's {time}.",
+            "i'm going back to sleep. you should too.",
+            "*mumbles* bed... {time}... you...",
+            "it's {time}. i'm up. you're up. one of us should not be.",
+            "*one eye open* {time}. really?",
+            "five more minutes. for me. you, bed. now.",
+            "i woke up and you're still here. it's {time}."};
 
     /** A line group by name, or null if there's no such group. */
     static String[] get(String name) {
