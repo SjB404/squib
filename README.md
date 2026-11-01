@@ -14,6 +14,13 @@ The app downloads `squib.json` from this repo when it starts and every 6 hours a
 }
 ```
 
+### settings
+
+| setting | default | what it does |
+|---|---|---|
+| `scrollCheckMinutes` | 15 | minutes between scroll check-ins |
+| `activityGapMin` / `activityGapMax` | 25 / 70 | seconds between his activities (a random time in between) |
+
 ### lines
 
 Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines.
@@ -34,16 +41,22 @@ Each group **replaces** the built-in lines for that group. A group that's missin
 | LATE_NIGHT | 1am to 5am bedtime nagging |
 | WATCH_ENTER, WATCH, WATCH_LONG | video apps (WATCH_LONG: after 2 hours) |
 | MUSIC_ENTER, MUSIC | music apps |
-| SCROLL, SCROLL_LONG | scrolling apps. SCROLL_LONG needs at least 3 lines: they're said after 20, 40 and 60 minutes, in order |
+| SCROLL, SCROLL_LONG | scrolling apps. SCROLL_LONG is said every `scrollCheckMinutes` (15) of scrolling, going through the lines in order and starting over at the end. `{mins}` becomes how long you've been scrolling |
 | CHAT_ENTER | chat apps |
 | GAME_ENTER, GAME, MINECRAFT_ENTER | games |
 | NAV_ENTER, NAV | map apps |
 | READ_ENTER, READ | reading apps |
+| MINECRAFT | in Minecraft, when he switches items or starts mining |
+| BALL, PLANE, BUBBLES, BOOK, YOYO, DANCE, WAVE, BUTTERFLY, NAP, TEA | when he starts that activity (not every time) |
 
 These get filled in when he says the line:
-`{time}` the current time, `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
+`{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
 
 Stick to plain keyboard characters. The pixel font has no emoji or accented letters, so those show up as `?`.
+
+### minecraft
+
+Apps where he gets his Minecraft gear. Anything listed here also counts as a game.
 
 ### apps
 
@@ -88,7 +101,7 @@ Walks along the bottom. When standing still he bops to a beat and music notes fl
 Walks along the bottom like normal.
 
 - Talks every 35 seconds to 3 minutes: 30% of the time a SCROLL line, otherwise normal chatter.
-- After 20, 40 and 60 minutes of scrolling: the three SCROLL_LONG lines, in order (needs break reminders on). The count resets after 5 minutes away from scrolling apps.
+- Every 15 minutes of scrolling (`scrollCheckMinutes`), no limit: a SCROLL_LONG check-in (needs break reminders on). The count resets after 5 minutes away from scrolling apps.
 
 **Apps:** TikTok `com.zhiliaoapp.musically`, TikTok (Asia) `com.ss.android.ugc.trill`, Instagram `com.instagram.android`, Threads `com.instagram.barcelona`, Snapchat `com.snapchat.android`, Reddit `com.reddit.frontpage`, X `com.twitter.android`, Facebook `com.facebook.katana`, Tumblr `com.tumblr`, Pinterest `com.pinterest`, BeReal `com.bereal.ft`, LinkedIn `com.linkedin.android`, VSCO `com.vsco.cam`, Bluesky `bsky.app`, Lemon8 `com.lemon8.android`
 
@@ -108,6 +121,7 @@ Sits on a cloud in the top-left corner.
 
 - Says a GAME line every 3 to 6 minutes.
 - Minecraft uses MINECRAFT_ENTER instead of GAME_ENTER.
+- In Minecraft he gets diamond gear. See [Minecraft](#minecraft-1) below.
 
 **Apps:** Minecraft `com.mojang.minecraftpe`, Roblox `com.roblox.client`, Clash Royale `com.supercell.clashroyale`, Brawl Stars `com.supercell.brawlstars`, Clash of Clans `com.supercell.clashofclans`, Genshin Impact `com.miHoYo.GenshinImpact`, Honkai: Star Rail `com.HoYoverse.hkrpgoversea`, PUBG Mobile `com.tencent.ig`, Call of Duty Mobile `com.activision.callofduty.shooter`, Among Us `com.innersloth.spacemafia`, Subway Surfers `com.kiloo.subwaysurf`, Candy Crush `com.king.candycrushsaga`, Pokemon GO `com.nianticlabs.pokemongo`, Chess.com `com.chess`, Free Fire `com.dts.freefireth`, EA FC Mobile `com.ea.gp.fifamobile`, Mobile Legends `com.mobile.legends`, Fortnite `com.epicgames.fortnite`, Arknights `com.YoStarEN.Arknights`
 
@@ -142,3 +156,34 @@ Disappears completely, including speech and bedtime nagging.
 **Also:** apps not on any list that Android files under: any app with "camera" or "incallui" in its name.
 
 Apps added in the `apps` section of `squib.json` go on top of these lists.
+
+## Activities
+
+Every 25 to 70 seconds (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do. About half the time he says a line from that activity's group when he starts.
+
+| activity | what happens | where |
+|---|---|---|
+| BALL | a ball drops in, he chases it and kicks it around 3 to 6 times | bottom of the screen only |
+| PLANE | winds up and throws a paper plane that glides off screen. His eyes follow it | anywhere |
+| BUBBLES | blows bubbles with a wand. They float up and fade | anywhere |
+| BOOK | holds up a book and reads, turning pages now and then | anywhere, more often in reading apps |
+| YOYO | plays with a yo-yo | anywhere |
+| DANCE | dances: arms swapping, hopping on the beat, music notes | anywhere, much more often in music apps |
+| WAVE | waves at you | anywhere |
+| BUTTERFLY | a butterfly flies in and circles his head. He hops trying to catch it, then it flies away | anywhere |
+| NAP | takes a 20 to 45 second nap. Tap him to wake him | anywhere |
+| TEA | drinks a mug of tea. Steam rises, and he takes sips | anywhere |
+
+He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing.
+
+## Minecraft
+
+In Minecraft (and the launchers in the `minecraft` list) he gets diamond gear. Only diamond, never netherite.
+
+- Holds one of: diamond sword, diamond pickaxe, diamond axe, diamond shovel, or a diamond. He switches to a different one every 20 to 50 seconds.
+- Wears a diamond helmet most of the time (decided each time you open Minecraft).
+- Every few seconds he does something with it:
+  - **swing:** raises the item and strikes, with a little swoosh
+  - **mine:** chops repeatedly, with bits of dirt and stone flying (pickaxe, axe, shovel)
+  - **show off:** holds it up high, with sparkles (always for the diamond)
+- Says MINECRAFT lines sometimes when switching items or starting to mine.

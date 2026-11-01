@@ -1,5 +1,10 @@
 {
   "version": 1,
+  "settings": {
+    "scrollCheckMinutes": 15,
+    "activityGapMin": 25,
+    "activityGapMax": 70
+  },
   "lines": {
     "THOUGHTS": [
       "the bottom of your screen is warm today. good spot.",
@@ -301,9 +306,10 @@
       "double tap if you like squids."
     ],
     "SCROLL_LONG": [
-      "you've been scrolling for 20 minutes. still having fun?",
-      "40 minutes of scrolling. want to do something else for a bit?",
-      "an hour of scrolling. the feed will still be there later, promise."
+      "{mins} minutes of scrolling. still having fun?",
+      "that's {mins} minutes on the feed. want to do something else for a bit?",
+      "{mins} minutes of scrolling. the feed will still be there later, promise.",
+      "scroll check: {mins} minutes. stretch, maybe?"
     ],
     "CHAT_ENTER": [
       "i'm not reading, promise.",
@@ -354,6 +360,76 @@
       "random thought: ",
       "hot take: ",
       "don't laugh, but "
+    ],
+    "BALL": [
+      "ooh, a ball!",
+      "kick-off!",
+      "goooal! (there's no goal.)",
+      "*dribbles*"
+    ],
+    "PLANE": [
+      "paper plane, go!",
+      "fly, my friend!",
+      "aerodynamics!",
+      "whoosh."
+    ],
+    "BUBBLES": [
+      "bubbles!",
+      "*blows bubbles*",
+      "pop pop pop.",
+      "this one's a big one."
+    ],
+    "BOOK": [
+      "*reads*",
+      "just one more chapter.",
+      "no spoilers.",
+      "ooh, plot twist."
+    ],
+    "YOYO": [
+      "walk the dog!",
+      "*yo-yo noises*",
+      "around the world!"
+    ],
+    "DANCE": [
+      "dance break!",
+      "*vibes*",
+      "can't stop, won't stop.",
+      "feel the beat."
+    ],
+    "WAVE": [
+      "hi!",
+      "hey you!",
+      "*waves*",
+      "hello hello!"
+    ],
+    "BUTTERFLY": [
+      "a butterfly!",
+      "come here, little guy.",
+      "so pretty.",
+      "i almost had it!"
+    ],
+    "NAP": [
+      "quick nap...",
+      "five more minutes...",
+      "*yawn*"
+    ],
+    "TEA": [
+      "tea time.",
+      "*sips*",
+      "ahh, warm.",
+      "careful, it's hot."
+    ],
+    "MINECRAFT": [
+      "diamonds!",
+      "found diamonds. obviously.",
+      "full diamond. as it should be.",
+      "netherite? never heard of it. diamond forever.",
+      "mining away.",
+      "creeper? where?",
+      "this sword has seen things.",
+      "one more block. then one more.",
+      "*mines*",
+      "don't dig straight down."
     ]
   },
   "apps": {
@@ -478,5 +554,14 @@
       "com.android.server.telecom",
       "us.zoom.videomeetings"
     ]
-  }
+  },
+  "minecraft": [
+    "com.mojang.minecraftpe",
+    "com.mojang.minecraftedu",
+    "net.kdt.pojavlaunch",
+    "net.kdt.pojavlaunch.debug",
+    "git.artdeell.mojo",
+    "com.movtery.zalithlauncher",
+    "com.tungsten.fcl"
+  ]
 }
