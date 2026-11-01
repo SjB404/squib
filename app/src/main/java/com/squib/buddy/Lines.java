@@ -1243,6 +1243,154 @@ final class Lines {
             "sleepy squid.",
             "i could nap. i could always nap.",
             "*yawns* excuse me."};
+    static String[] GUM = {
+            "*chews gum*",
+            "watch this bubble.",
+            "biggest bubble ever, coming up.",
+            "*blows*"};
+    static String[] GUM_POP = {
+            "...it's in my eyes.",
+            "POP. ow.",
+            "that was the biggest one yet. worth it.",
+            "gum everywhere. i regret nothing."};
+    static String[] CAMPFIRE = {
+            "campfire time.",
+            "*roasts marshmallow*",
+            "perfectly golden. that's the goal.",
+            "nothing beats a campfire."};
+    static String[] MARSHMALLOW_FIRE = {
+            "FIRE! FIRE!",
+            "it's on fire!!",
+            "*blows frantically*",
+            "not again."};
+    static String[] MARSHMALLOW_YUM = {
+            "mmm, toasty.",
+            "perfect.",
+            "*chews happily*",
+            "crispy outside, gooey inside. ten out of ten.",
+            "burnt ones taste better anyway."};
+    static String[] DRUMS = {
+            "*ba dum tss*",
+            "drum solo!",
+            "feel the rhythm.",
+            "boom boom tap.",
+            "*taps drum*"};
+    static String[] HULA = {
+            "hula time!",
+            "look at my hips. i have hips now.",
+            "round and round...",
+            "don't drop it, don't drop it."};
+    static String[] BOOMERANG = {
+            "watch it come back.",
+            "boomerang!",
+            "*throws*",
+            "it always comes back. usually."};
+    static String[] BOOMERANG_CATCH = {
+            "caught it!",
+            "told you.",
+            "nailed it."};
+    static String[] BOOMERANG_BONK = {
+            "OW.",
+            "...it came back.",
+            "bonk.",
+            "i'm fine. totally fine."};
+    static String[] GARDEN = {
+            "time to garden.",
+            "plant a seed, watch it grow.",
+            "*waters plant*",
+            "grow, little guy."};
+    static String[] GARDEN_DONE = {
+            "look! a flower!",
+            "i grew that.",
+            "pretty.",
+            "it's beautiful. i'm crying. squids don't cry."};
+    static String[] BOWLING = {
+            "bowling time.",
+            "*rolls*",
+            "go go go...",
+            "right down the middle."};
+    static String[] BOWLING_STRIKE = {
+            "STRIKE!",
+            "all of them!",
+            "perfect game.",
+            "i'm a natural."};
+    static String[] BOWLING_MISS = {
+            "so close.",
+            "the floor is uneven.",
+            "one pin. ONE.",
+            "i'll get it next time."};
+    static String[] KARATE = {
+            "HI-YA!",
+            "*chop*",
+            "karate squid!",
+            "the board never stood a chance."};
+    static String[] WORKOUT = {
+            "gotta get strong.",
+            "one... two...",
+            "feel the burn.",
+            "pumping iron. well, pixels.",
+            "leg day was yesterday. arm day today."};
+    static String[] FRIEND = {
+            "oh hey, buddy!",
+            "a friend!",
+            "hi! hi! hi!",
+            "look who it is!"};
+    static String[] FRIEND_BYE = {
+            "bye, buddy!",
+            "see you soon!",
+            "come back anytime!"};
+    static String[] BLOCKS = {
+            "building a tower.",
+            "one more block...",
+            "steady... steady...",
+            "architecture."};
+    static String[] BLOCKS_FALL = {
+            "noooo.",
+            "my tower!",
+            "...i'll rebuild.",
+            "it was a bad tower anyway."};
+    static String[] BLOCKS_DONE = {
+            "look at it. perfect.",
+            "a masterpiece of engineering.",
+            "it stayed up!"};
+    static String[] MAIL = {
+            "a letter!",
+            "mail for me?",
+            "ooh, post!"};
+    static String[] MAIL_READ = {
+            "it says 'you're doing great'. who sent this?",
+            "it's from me. i wrote it yesterday. aw.",
+            "it says 'give squib a shrimp'. interesting.",
+            "it's a coupon for one free boop.",
+            "it says 'hi'. that's it. nice.",
+            "it's a drawing of a shrimp. i love it.",
+            "it's from the ocean. it misses me.",
+            "'dear squib, you're the best squid.' accurate.",
+            "it's a bill. for what? i don't buy anything.",
+            "it says 'look behind you'. ...nope."};
+    static String[] MEDITATE = {
+            "ommm...",
+            "inner peace.",
+            "*floats*",
+            "i am one with the pixels.",
+            "breathe in... breathe out..."};
+    static String[] SPINNER = {
+            "*spins fidget spinner*",
+            "whirr.",
+            "so satisfying.",
+            "fidget spinners are still cool. i checked."};
+    static String[] HICCUP = {
+            "*hic*",
+            "*hic* ...sorry.",
+            "hic! not again."};
+    static String[] SHAKE = {
+            "*shakes*",
+            "brrrr.",
+            "*shake shake shake*"};
+    static String[] WHISTLE = {
+            "*whistles*",
+            "*whistles a little tune*",
+            "fweet fweet."};
 
     /** A line group by name, or null if there's no such group. */
     static String[] get(String name) {

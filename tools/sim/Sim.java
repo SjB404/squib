@@ -34,6 +34,7 @@ public class Sim {
         Fun.inMc = false;
         Fun.mcAct = 0;
         Fun.torches.clear();
+        Fun.flowers.clear();
         Fun.oreOn = false;
         Fun.itemOverride = null;
         Fun.hat = null;
@@ -123,7 +124,7 @@ public class Sim {
     }
 
     static void sheets(String only) throws Exception {
-        for (int act = 1; act <= Fun.YAWN; act++) {
+        for (int act = 1; act < Fun.NAMES.length; act++) {
             String name = Fun.NAMES[act];
             if (only != null && !only.contains(name)) {
                 continue;
@@ -144,6 +145,12 @@ public class Sim {
             Fun.start(v, act);
             double dur = Math.max(1.5, Math.min(20, Fun.actEnd - v.t + 0.5));
             if (act == Fun.BALL || act == Fun.FISHING || act == Fun.SKATE || act == Fun.ICECREAM) {
+                dur = 16;
+            }
+            if (act == Fun.BOOMERANG || act == Fun.BOWLING || act == Fun.BLOCKS || act == Fun.MAIL || act == Fun.WORKOUT) {
+                dur = 9;
+            }
+            if (act == Fun.FRIEND) {
                 dur = 16;
             }
             capture(String.format("%02d_%s", act, name), v, dur, 15, 300, null);
@@ -191,21 +198,41 @@ public class Sim {
         }
     }
 
+    static int mostIn(List<Double> ts, double window) {
+        int best = 0;
+        for (int i = 0; i < ts.size(); i++) {
+            int n = 0;
+            for (int j = i; j < ts.size() && ts.get(j) - ts.get(i) < window; j++) {
+                n++;
+            }
+            best = Math.max(best, n);
+        }
+        return best;
+    }
+
     /** Hours of random use. Fails loudly on any exception; reports how lines repeat. */
     static void stress(double hours) throws Exception {
         Random r = new Random(7);
         String[] apps = {"com.android.launcher", "com.netflix.mediaclient", "com.spotify.music", "com.zhiliaoapp.musically",
                 "com.whatsapp", "com.roblox.client", "com.google.android.apps.maps", "com.amazon.kindle",
                 "com.google.android.GoogleCamera", "com.mojang.minecraftpe", "net.kdt.pojavlaunch"};
+        boolean real = System.getProperty("real") != null;
+        if (!real) { // compress the gaps so every activity gets exercised
+            Fun.activityGapMin = 25;
+            Fun.activityGapMax = 70;
+            Fun.fidgetGapMin = 12;
+            Fun.fidgetGapMax = 35;
+        }
         SquibView v = fresh();
-        Fun.nextAt = v.t + 10;
+        Fun.nextAt = real ? -1 : v.t + 10;
         Fun.nextFidgetAt = v.t + 5;
+        List<Double> actStarts = new ArrayList<>(), fidgetStarts = new ArrayList<>();
         v.nextChatAt = v.t + 5;
         Fun.nextSeasonCheck = 0;
         long frames = (long) (hours * 3600 * 30);
         Map<String, List<Double>> said = new HashMap<>();
         String last = null;
-        int[] actCount = new int[Fun.YAWN + 1];
+        int[] actCount = new int[Fun.NAMES.length];
         int lastAct = 0;
         int mcActs = 0;
         double nextEvent = v.t + 30;
@@ -221,6 +248,7 @@ public class Sim {
             last = v.speech;
             if (Fun.act != lastAct && Fun.act != 0) {
                 actCount[Fun.act]++;
+                (Fun.act >= Fun.FIRST_FIDGET ? fidgetStarts : actStarts).add(v.t);
             }
             lastAct = Fun.act;
             if (Fun.mcAct != 0 && i % 30 == 0) {
@@ -251,7 +279,9 @@ public class Sim {
                 } else if (e < 0.74) {
                     v.feed();
                 } else if (e < 0.86) {
-                    v.trick();
+                    if (!real) {
+                        v.trick();
+                    }
                 } else if (e < 0.92) {
                     v.talk();
                 } else {
@@ -281,10 +311,12 @@ public class Sim {
         System.out.printf("simulated %.1f h: %d lines said, %d distinct, %d repeats, closest repeat %.0f min apart: %s%n",
                 hours, lines, said.size(), repeats, minGap / 60, worst);
         StringBuilder b = new StringBuilder("activities:");
-        for (int k = 1; k <= Fun.YAWN; k++) {
+        for (int k = 1; k < Fun.NAMES.length; k++) {
             b.append(' ').append(Fun.NAMES[k]).append('=').append(actCount[k]);
         }
         System.out.println(b);
         System.out.println("minecraft action seconds: " + mcActs);
+        System.out.println("most activities in any 60 min: " + mostIn(actStarts, 3600) + ", most fidgets in any 10 min: " + mostIn(fidgetStarts, 600)
+                + ", activities total: " + actStarts.size() + ", fidgets total: " + fidgetStarts.size());
     }
 }

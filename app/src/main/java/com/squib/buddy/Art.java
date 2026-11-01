@@ -407,6 +407,120 @@ final class Art {
             "wwwww"};
     static final String[] POP = {"w.w", ".w.", "w.w"};
 
+    // ---------- batch two ----------
+    static final String[] FIRE1 = {
+            "...F...",
+            "..fF...",
+            "..fFf..",
+            ".ffFff.",
+            "kKkKkKk",
+            "KkKkKkK"};
+    static final String[] FIRE2 = {
+            "....F..",
+            "...Ff..",
+            "..fFf..",
+            ".fffFf.",
+            "kKkKkKk",
+            "KkKkKkK"};
+    static final String[] DRUM = {
+            "..qqqqqq..",
+            ".qwwwwwwq.",
+            "rqqqqqqqqr",
+            "rRryrRryrR",
+            "rRrRrRrRrR",
+            ".rrrrrrrr."};
+    static final String[] BOOMERANG = {
+            "kkkkk",
+            "kKKKk",
+            "kK...",
+            "kK...",
+            "kk..."};
+    static final int[] BOOMERANG_GRIP = {0, 4};
+    static final String[] SOIL = {
+            ".nnn.",
+            "nnnnn"};
+    static final String[][] SPROUT = {
+            {".....", ".....", ".....", ".....", "..g..", "..g.."},
+            {".....", ".....", "..g..", ".gg..", "..gg.", "..g.."},
+            {".....", "..r..", ".rgr.", "..g..", ".ggg.", "..g.."},
+            {".r.r.", "rrYrr", ".rrr.", "..g..", "gggg.", "..g.."}};
+    static final String[] CAN = {
+            "..mm...",
+            ".mmmm.m",
+            "mmmmmm.",
+            ".mmmm.."};
+    static final int[] CAN_GRIP = {0, 2};
+    static final String[] PIN = {
+            ".w.",
+            "www",
+            "wrw",
+            "www",
+            "www"};
+    static final String[] BOWL = {
+            ".MM.",
+            "MzMM",
+            "MMMM",
+            ".MM."};
+    static final String[] BRICK = {
+            "SSS",
+            "ShS",
+            "SSS"};
+    static final String[] PLANK = {
+            "kkkkkkkkk",
+            "KkKkKkKkK"};
+    static final String[] HALF_PLANK = {
+            "kkkk",
+            "KkKk"};
+    static final String[] DUMBBELL = {
+            "o.....o",
+            "oqqqqqo",
+            "o.....o"};
+    static final int[] DUMBBELL_GRIP = {3, 1};
+    static final String[] FRIEND1 = {
+            "..bbbbbbbb..",
+            "..bbbbbbbb..",
+            "..bbbbxbbx..",
+            "bbbbbbbbbbbb",
+            "..bbbbbbbb..",
+            "..bbbbbbbb..",
+            "..b.b..b.b..",
+            "..b.b..b.b.."};
+    static final String[] FRIEND2 = {
+            "..bbbbbbbb..",
+            "..bbbbbbbb..",
+            "..bbbbxbbx..",
+            "bbbbbbbbbbbb",
+            "..bbbbbbbb..",
+            "..bbbbbbbb..",
+            "..b.b..b.b..",
+            "...b.b..b.b."};
+    static final String[] ENVELOPE = {
+            "ppppppp",
+            "pqpppqp",
+            "ppqrqpp",
+            "ppppppp",
+            "ppppppp"};
+    static final String[] LETTER = {
+            "ppppppp",
+            "pqqqqqp",
+            "ppppppp",
+            "pqqqqpp",
+            "ppppppp",
+            "pqqqppp"};
+    static final String[] SPINNER1 = {
+            "..u..",
+            "..u..",
+            "..w..",
+            ".u.u.",
+            "u...u"};
+    static final String[] SPINNER2 = {
+            "u...u",
+            ".u.u.",
+            "..w..",
+            "..u..",
+            "..u.."};
+    static final String[] STAR = {".y.", "yyy", ".y."};
+
     // ---------- hats ----------
     static final String[] PARTY_HAT = {
             "...w...",

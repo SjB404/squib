@@ -2,10 +2,10 @@
   "version": 1,
   "settings": {
     "scrollCheckMinutes": 15,
-    "activityGapMin": 25,
-    "activityGapMax": 70,
-    "fidgetGapMin": 12,
-    "fidgetGapMax": 35,
+    "activityGapMin": 1800,
+    "activityGapMax": 3600,
+    "fidgetGapMin": 600,
+    "fidgetGapMax": 1200,
     "snowEvery": 0.9
   },
   "lines": {
@@ -1322,6 +1322,183 @@
       "sleepy squid.",
       "i could nap. i could always nap.",
       "*yawns* excuse me."
+    ],
+    "GUM": [
+      "*chews gum*",
+      "watch this bubble.",
+      "biggest bubble ever, coming up.",
+      "*blows*"
+    ],
+    "GUM_POP": [
+      "...it's in my eyes.",
+      "POP. ow.",
+      "that was the biggest one yet. worth it.",
+      "gum everywhere. i regret nothing."
+    ],
+    "CAMPFIRE": [
+      "campfire time.",
+      "*roasts marshmallow*",
+      "perfectly golden. that's the goal.",
+      "nothing beats a campfire."
+    ],
+    "MARSHMALLOW_FIRE": [
+      "FIRE! FIRE!",
+      "it's on fire!!",
+      "*blows frantically*",
+      "not again."
+    ],
+    "MARSHMALLOW_YUM": [
+      "mmm, toasty.",
+      "perfect.",
+      "*chews happily*",
+      "crispy outside, gooey inside. ten out of ten.",
+      "burnt ones taste better anyway."
+    ],
+    "DRUMS": [
+      "*ba dum tss*",
+      "drum solo!",
+      "feel the rhythm.",
+      "boom boom tap.",
+      "*taps drum*"
+    ],
+    "HULA": [
+      "hula time!",
+      "look at my hips. i have hips now.",
+      "round and round...",
+      "don't drop it, don't drop it."
+    ],
+    "BOOMERANG": [
+      "watch it come back.",
+      "boomerang!",
+      "*throws*",
+      "it always comes back. usually."
+    ],
+    "BOOMERANG_CATCH": [
+      "caught it!",
+      "told you.",
+      "nailed it."
+    ],
+    "BOOMERANG_BONK": [
+      "OW.",
+      "...it came back.",
+      "bonk.",
+      "i'm fine. totally fine."
+    ],
+    "GARDEN": [
+      "time to garden.",
+      "plant a seed, watch it grow.",
+      "*waters plant*",
+      "grow, little guy."
+    ],
+    "GARDEN_DONE": [
+      "look! a flower!",
+      "i grew that.",
+      "pretty.",
+      "it's beautiful. i'm crying. squids don't cry."
+    ],
+    "BOWLING": [
+      "bowling time.",
+      "*rolls*",
+      "go go go...",
+      "right down the middle."
+    ],
+    "BOWLING_STRIKE": [
+      "STRIKE!",
+      "all of them!",
+      "perfect game.",
+      "i'm a natural."
+    ],
+    "BOWLING_MISS": [
+      "so close.",
+      "the floor is uneven.",
+      "one pin. ONE.",
+      "i'll get it next time."
+    ],
+    "KARATE": [
+      "HI-YA!",
+      "*chop*",
+      "karate squid!",
+      "the board never stood a chance."
+    ],
+    "WORKOUT": [
+      "gotta get strong.",
+      "one... two...",
+      "feel the burn.",
+      "pumping iron. well, pixels.",
+      "leg day was yesterday. arm day today."
+    ],
+    "FRIEND": [
+      "oh hey, buddy!",
+      "a friend!",
+      "hi! hi! hi!",
+      "look who it is!"
+    ],
+    "FRIEND_BYE": [
+      "bye, buddy!",
+      "see you soon!",
+      "come back anytime!"
+    ],
+    "BLOCKS": [
+      "building a tower.",
+      "one more block...",
+      "steady... steady...",
+      "architecture."
+    ],
+    "BLOCKS_FALL": [
+      "noooo.",
+      "my tower!",
+      "...i'll rebuild.",
+      "it was a bad tower anyway."
+    ],
+    "BLOCKS_DONE": [
+      "look at it. perfect.",
+      "a masterpiece of engineering.",
+      "it stayed up!"
+    ],
+    "MAIL": [
+      "a letter!",
+      "mail for me?",
+      "ooh, post!"
+    ],
+    "MAIL_READ": [
+      "it says 'you're doing great'. who sent this?",
+      "it's from me. i wrote it yesterday. aw.",
+      "it says 'give squib a shrimp'. interesting.",
+      "it's a coupon for one free boop.",
+      "it says 'hi'. that's it. nice.",
+      "it's a drawing of a shrimp. i love it.",
+      "it's from the ocean. it misses me.",
+      "'dear squib, you're the best squid.' accurate.",
+      "it's a bill. for what? i don't buy anything.",
+      "it says 'look behind you'. ...nope."
+    ],
+    "MEDITATE": [
+      "ommm...",
+      "inner peace.",
+      "*floats*",
+      "i am one with the pixels.",
+      "breathe in... breathe out..."
+    ],
+    "SPINNER": [
+      "*spins fidget spinner*",
+      "whirr.",
+      "so satisfying.",
+      "fidget spinners are still cool. i checked."
+    ],
+    "HICCUP": [
+      "*hic*",
+      "*hic* ...sorry.",
+      "hic! not again."
+    ],
+    "SHAKE": [
+      "*shakes*",
+      "brrrr.",
+      "*shake shake shake*"
+    ],
+    "WHISTLE": [
+      "*whistles*",
+      "*whistles a little tune*",
+      "fweet fweet."
     ]
   },
   "apps": {

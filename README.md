@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.5). It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.6). It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -40,13 +40,13 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 | setting | default | what it does |
 |---|---|---|
 | `scrollCheckMinutes` | 15 | minutes between scroll check-ins |
-| `activityGapMin` / `activityGapMax` | 25 / 70 | seconds between his activities (a random time in between) |
-| `fidgetGapMin` / `fidgetGapMax` | 12 / 35 | seconds between quick fidgets (stretching, spinning and so on) |
+| `activityGapMin` / `activityGapMax` | 1800 / 3600 | seconds between his activities (a random time in between). 30 to 60 minutes, so at most 2 an hour |
+| `fidgetGapMin` / `fidgetGapMax` | 600 / 1200 | seconds between quick fidgets. 10 to 20 minutes, so at most 1 every 10 minutes |
 | `snowEvery` | 0.9 | seconds between snowflakes in December. `0` turns snow off |
 
 ### lines
 
-There are 1153 lines in 81 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1271 lines in 110 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -75,7 +75,8 @@ There are 1153 lines in 81 groups. Each group **replaces** the built-in lines fo
 | MINECRAFT | in Minecraft, when he switches items or starts mining |
 | ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
 | one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
-| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE | moments during activities |
+| one group per fidget (STRETCH, SPINNER, HICCUP, ...) | sometimes, when he does that fidget |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ | moments during activities. MAIL_READ is what the letter says |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
@@ -187,7 +188,7 @@ Apps added in the `apps` section of `squib.json` go on top of these lists.
 
 ## Activities
 
-Every 25 to 70 seconds (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do. He won't pick any of his last 3 activities. About half the time he says a line from that activity's group when he starts. The **trick** button in his settings makes him do one right away.
+Every 30 to 60 minutes (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do, so at most 2 an hour. The wait carries over if he's restarted, so restarting him doesn't bring the next one sooner. He won't pick any of his last 3 activities. About half the time he says a line from that activity's group when he starts. The **trick** button in his settings makes him do one right away.
 
 | activity | what happens | where |
 |---|---|---|
@@ -216,12 +217,25 @@ Every 25 to 70 seconds (`activityGapMin` / `activityGapMax`), when he's standing
 | PAINT | paints a picture on an easel (a shrimp, the sun, a heart, himself or a landscape), then shows it off | anywhere |
 | SELFIE | takes three selfies with a tiny phone, with flash | anywhere |
 | PARTY | throws confetti. Only on special days (see below) | anywhere |
+| GUM | blows a bubblegum bubble that grows over his face and pops all over him | anywhere |
+| CAMPFIRE | roasts a marshmallow over a little campfire. Sometimes it catches fire and he blows it out. Then he eats it | bottom of the screen only |
+| DRUMS | plays a drum with two sticks, music notes | anywhere, much more often in music apps |
+| HULA | hula hoop round his middle | anywhere |
+| BOOMERANG | throws a boomerang that loops out and comes back. He catches it, or it bonks him on the head | anywhere |
+| GARDEN | plants a seed and waters it until a flower grows. The flower stays on the floor for 10 minutes (up to 3) | bottom of the screen only |
+| BOWLING | rolls a ball at three pins. Strike, or a miss that leaves some standing | bottom of the screen only |
+| KARATE | karate-chops a plank on two bricks in half | bottom of the screen only |
+| WORKOUT | lifts a dumbbell, 4 reps each arm, with sweat | anywhere |
+| FRIEND | a little teal squid walks in, they say hi and hop, then it walks off | bottom of the screen only |
+| BLOCKS | stacks four toy blocks into a wobbly tower. Sometimes it falls over | anywhere |
+| MAIL | a letter floats down, he catches it and reads it out (MAIL_READ) | anywhere |
+| MEDITATE | sits with his eyes closed and floats up a little | anywhere |
 
 He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing.
 
 ### Fidgets
 
-Between activities, every 12 to 35 seconds (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking) or YAWN. He only says something about 1 time in 8.
+Between activities, every 10 to 20 minutes (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER (a fidget spinner), HICCUP, SHAKE (shakes himself off like a wet dog) or WHISTLE. He only says something about 1 time in 8.
 
 ## Minecraft
 

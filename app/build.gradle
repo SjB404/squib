@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 34
         // Bump both for every release. The APK in apk/ and the README say which version is current.
-        versionCode 6
-        versionName "1.5"
+        versionCode 7
+        versionName "1.6"
     }
 
     signingConfigs {

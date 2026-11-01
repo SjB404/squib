@@ -28,30 +28,42 @@ final class Fun {
     static final int NONE = 0, BALL = 1, PLANE = 2, BUBBLES = 3, BOOK = 4, YOYO = 5, DANCE = 6, WAVE = 7,
             BUTTERFLY = 8, NAP = 9, TEA = 10, GUITAR = 11, JUGGLE = 12, KITE = 13, FISHING = 14, RAIN = 15,
             SKATE = 16, ICECREAM = 17, BALLOON = 18, MAGIC = 19, STARGAZE = 20, SNEEZE = 21, JUMPROPE = 22,
-            PAINT = 23, SELFIE = 24, CONFETTI = 25,
-            // quick fidgets (their own, shorter timer)
-            STRETCH = 26, SPIN = 27, TRIP = 28, SCRATCH = 29, YAWN = 30;
+            PAINT = 23, SELFIE = 24, CONFETTI = 25, GUM = 26, CAMPFIRE = 27, DRUMS = 28, HULA = 29,
+            BOOMERANG = 30, GARDEN = 31, BOWLING = 32, KARATE = 33, WORKOUT = 34, FRIEND = 35, BLOCKS = 36,
+            MAIL = 37, MEDITATE = 38,
+            LAST_ACTIVITY = 38,
+            // quick fidgets (their own timer)
+            STRETCH = 39, SPIN = 40, TRIP = 41, SCRATCH = 42, YAWN = 43, SPINNER = 44, HICCUP = 45, SHAKE = 46,
+            WHISTLE = 47,
+            FIRST_FIDGET = 39;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
     static final String[] NAMES = {"NONE", "BALL", "PLANE", "BUBBLES", "BOOK", "YOYO", "DANCE", "WAVE",
             "BUTTERFLY", "NAP", "TEA", "GUITAR", "JUGGLE", "KITE", "FISHING", "RAIN", "SKATE", "ICECREAM",
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN"};
+            "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
+            "BLOCKS", "MAIL", "MEDITATE",
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH,
-            ANY, FLOOR, ANY, ANY, ANY, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY};
+            ANY, FLOOR, ANY, ANY, ANY, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
+            ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
+            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2, 5, 1, 2, 2, 2, 25,
-            3, 3, 2, 3, 2};
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            3, 3, 2, 3, 2, 4, 2, 2, 2};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
-    static double activityGapMin = 25;
-    static double activityGapMax = 70;
-    static double fidgetGapMin = 12;
-    static double fidgetGapMax = 35;
+    /** Seconds between activities. 30 to 60 minutes: at most 2 an hour. */
+    static double activityGapMin = 1800;
+    static double activityGapMax = 3600;
+    /** Seconds between fidgets. 10 to 20 minutes: at most 6 an hour. */
+    static double fidgetGapMin = 600;
+    static double fidgetGapMax = 1200;
     /** Seconds between snowflakes near squib in December. 0 turns snow off. */
     static double snowEvery = 0.9;
 
@@ -83,6 +95,8 @@ final class Fun {
     static float ox, oy, ovx, ovy;
     static boolean objOn;
     static int[] order;
+    static final boolean[] pins = new boolean[3];
+    static final ArrayList<float[]> flowers = new ArrayList<float[]>(); // {x, goneAt}
 
     // ---------- minecraft state ----------
     static final String[] ITEMS = {"SWORD", "PICK", "AXE", "SHOVEL", "GEM"};
@@ -299,8 +313,17 @@ final class Fun {
         double dt = Math.min(0.05, Math.max(0, t - lastT));
         lastT = t;
         if (nextAt < 0) {
-            nextAt = t + rand(15, 35);
-            nextFidgetAt = t + rand(6, 14);
+            // Pick up where the last run left off, so restarting him can't squeeze in extra activities.
+            long now = System.currentTimeMillis();
+            double sinceAct = (now - v.prefs.getLong("lastActivityAt", 0)) / 1000.0;
+            double sinceFidget = (now - v.prefs.getLong("lastFidgetAt", 0)) / 1000.0;
+            nextAt = t + Math.max(60, rand(activityGapMin, Math.max(activityGapMin, activityGapMax)) - sinceAct);
+            nextFidgetAt = t + Math.max(30, rand(fidgetGapMin, Math.max(fidgetGapMin, fidgetGapMax)) - sinceFidget);
+        }
+        for (int i = flowers.size() - 1; i >= 0; i--) {
+            if (t > flowers.get(i)[1]) {
+                flowers.remove(i);
+            }
         }
         season(v, t, dt);
         scroll(v);
@@ -368,14 +391,14 @@ final class Fun {
     }
 
     static int pick(SquibView v, Apps.Kind kind) {
-        int[] w = new int[CONFETTI + 1];
+        int[] w = new int[LAST_ACTIVITY + 1];
         int total = 0;
-        for (int a = 1; a <= CONFETTI; a++) {
+        for (int a = 1; a <= LAST_ACTIVITY; a++) {
             if (!allowed(v, a)) {
                 continue;
             }
             int weight = WEIGHT[a];
-            if (kind == Apps.Kind.MUSIC && (a == DANCE || a == GUITAR)) {
+            if (kind == Apps.Kind.MUSIC && (a == DANCE || a == GUITAR || a == DRUMS)) {
                 weight *= 5;
             }
             if (kind == Apps.Kind.READ && (a == BOOK || a == TEA)) {
@@ -391,7 +414,7 @@ final class Fun {
             return WAVE;
         }
         int n = rng.nextInt(total);
-        for (int a = 1; a <= CONFETTI; a++) {
+        for (int a = 1; a <= LAST_ACTIVITY; a++) {
             n -= w[a];
             if (n < 0) {
                 return a;
@@ -401,7 +424,7 @@ final class Fun {
     }
 
     static int pickFidget(SquibView v) {
-        int[] options = {STRETCH, SPIN, TRIP, SCRATCH, YAWN};
+        int[] options = {STRETCH, SPIN, TRIP, SCRATCH, YAWN, SPINNER, HICCUP, SHAKE, WHISTLE};
         int total = 0;
         for (int a : options) {
             total += allowed(v, a) ? WEIGHT[a] : 0;
@@ -451,7 +474,7 @@ final class Fun {
         phase = 0;
         count = 0;
         variant = 0;
-        boolean quick = a >= STRETCH;
+        boolean quick = a >= FIRST_FIDGET;
         if (!quick) {
             System.arraycopy(recentActs, 0, recentActs, 1, recentActs.length - 1);
             recentActs[0] = a;
@@ -591,6 +614,91 @@ final class Fun {
                 actEnd = t + 4;
                 nextEvent = t + 0.2;
                 break;
+            case GUM:
+                actEnd = t + 7;
+                mark = t + rand(3, 4.2); // pop
+                break;
+            case CAMPFIRE:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                variant = rng.nextDouble() < 0.45 ? 1 : 0; // 1: the marshmallow catches fire
+                mark = t + 4.5; // toasted
+                actEnd = mark + (variant == 1 ? 1.4 : 0) + 2.8;
+                nextEvent = t;
+                break;
+            case DRUMS:
+                actEnd = t + rand(6, 9);
+                count = -1;
+                break;
+            case HULA:
+                actEnd = t + rand(6, 9);
+                nextEvent = t;
+                break;
+            case BOOMERANG:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                variant = rng.nextDouble() < 0.3 ? 1 : 0; // 1: it bonks him on the way back
+                actEnd = t + 30;
+                break;
+            case GARDEN:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                actEnd = t + 11;
+                nextEvent = t + 1;
+                break;
+            case BOWLING:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                variant = rng.nextDouble() < 0.65 ? 1 : 0; // 1: strike
+                pins[0] = pins[1] = pins[2] = true;
+                ox = clamp(center(v) + side * 150 * d, 20 * d, v.screenW - 20 * d); // pins
+                actEnd = t + 30;
+                break;
+            case KARATE:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                actEnd = t + 3.2;
+                break;
+            case WORKOUT:
+                actEnd = t + 30;
+                count = 0;
+                break;
+            case FRIEND:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                ox = side > 0 ? v.screenW + 40 * d : -40 * d;
+                actEnd = t + 30;
+                break;
+            case BLOCKS:
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                v.facing = side;
+                variant = rng.nextDouble() < 0.45 ? 1 : 0; // 1: the tower falls
+                nextEvent = t + 0.6;
+                actEnd = t + 30;
+                break;
+            case MAIL:
+                ox = clamp(center(v) + (rng.nextFloat() - 0.5f) * 120 * d, 20 * d, v.screenW - 20 * d);
+                oy = Math.max(v.statusBar + 10 * d, v.posY - 320 * d);
+                actEnd = t + 30;
+                break;
+            case MEDITATE:
+                v.seated = true;
+                actEnd = t + rand(9, 12);
+                nextEvent = t + 1;
+                break;
+            case SPINNER:
+                actEnd = t + 3;
+                break;
+            case HICCUP:
+                actEnd = t + 2.6;
+                break;
+            case SHAKE:
+                actEnd = t + 1.2;
+                break;
+            case WHISTLE:
+                actEnd = t + 2.4;
+                nextEvent = t + 0.3;
+                break;
             case STRETCH:
                 v.kick(-2.5);
                 actEnd = t + 1.6;
@@ -619,18 +727,20 @@ final class Fun {
         if (act == NAP && v.motion == SquibView.Motion.SLEEP) {
             v.setMotion(SquibView.Motion.IDLE);
         }
-        if (act == TRIP) {
+        if (act == TRIP || act == MEDITATE) {
             v.seated = false;
         }
         v.raise = 0;
         if (act != NONE) {
             double t = v.t;
-            if (act >= STRETCH) {
+            if (act >= FIRST_FIDGET) {
                 nextFidgetAt = t + rand(fidgetGapMin, Math.max(fidgetGapMin, fidgetGapMax));
                 nextAt = Math.max(nextAt, t + 4);
+                v.prefs.edit().putLong("lastFidgetAt", System.currentTimeMillis()).apply();
             } else {
                 nextAt = t + rand(activityGapMin, Math.max(activityGapMin, activityGapMax));
                 nextFidgetAt = Math.max(nextFidgetAt, t + rand(6, 12));
+                v.prefs.edit().putLong("lastActivityAt", System.currentTimeMillis()).apply();
             }
             v.nextDecision = rand(2, 5);
         }
@@ -1367,9 +1477,513 @@ final class Fun {
                 }
                 break;
             }
+            case GUM: {
+                v.lookX = 0;
+                v.lookY = 0;
+                if (phase == 0 && t >= mark) {
+                    phase = 1;
+                    float x = center(v), y = sy(v, top(v) + 5, v.lift());
+                    for (int i = 0; i < 10; i++) {
+                        double a = i * Math.PI / 5;
+                        puff(v, "DRIP", x, y, (float) Math.cos(a) * 110 * d, (float) Math.sin(a) * 110 * d, 0.4f, 0, S);
+                    }
+                    v.surpriseFor = 0.7;
+                    v.kick(2.5);
+                    maybeSay(v, "GUM_POP", 0.8);
+                }
+                if (phase == 1) {
+                    v.face = t < mark + 0.7 ? SquibView.Face.SURPRISED : t < mark + 1.8 ? SquibView.Face.ANNOYED : SquibView.Face.HAPPY;
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case CAMPFIRE: {
+                boolean r = side > 0;
+                v.lookX = side;
+                v.lookY = 1;
+                if (t >= nextEvent) {
+                    nextEvent = t + rand(0.3, 0.7);
+                    puff(v, "FLAME", sx(v, mx(r, 28, 7) + 3.5f), sy(v, 15, 0), (rng.nextFloat() - 0.5f) * 15 * d, -35 * d, 0.7f, 0, S);
+                }
+                double eatAt = mark + (variant == 1 ? 1.4 : 0);
+                if (phase == 0 && t >= mark) {
+                    phase = 1;
+                    if (variant == 1) {
+                        v.surpriseFor = 1.0;
+                        v.kick(2);
+                        maybeSay(v, "MARSHMALLOW_FIRE", 0.8);
+                    }
+                }
+                if (phase == 1 && variant == 1 && t >= mark + 1.0) {
+                    float[] tip = stickTip(v, v.lift());
+                    puff(v, "STEAM", tip[0], tip[1] - 2 * S, 0, -25 * d, 0.8f, 0, S * 1.5f);
+                    variant = 2; // blown out, now burnt
+                }
+                arm(v, r, t > eatAt + 0.4 && t < eatAt + 1.2 ? 3 : 0);
+                if (phase == 1 && t >= eatAt + 1.2) {
+                    phase = 2;
+                    v.happyFor = 1.5;
+                    v.heart();
+                    maybeSay(v, "MARSHMALLOW_YUM", 0.8);
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case DRUMS: {
+                int beat = (int) (el * 5);
+                v.armLiftL = beat % 2 == 0 ? 2 : 0;
+                v.armLiftR = beat % 2 == 0 ? 0 : 2;
+                v.lookY = 1;
+                if (((int) el) % 2 == 1) {
+                    v.face = SquibView.Face.HAPPY;
+                }
+                if (beat != count) {
+                    count = beat;
+                    v.kick(0.8);
+                    if (rng.nextDouble() < 0.35) {
+                        v.note();
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case HULA: {
+                v.face = SquibView.Face.HAPPY;
+                v.armLiftL = 2;
+                v.armLiftR = 2;
+                v.lookX = Math.sin(el * 9) > 0 ? 1 : -1;
+                if (t >= nextEvent) {
+                    nextEvent = t + 0.35;
+                    v.kick(0.7);
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case BOOMERANG: {
+                boolean r = side > 0;
+                v.facing = side;
+                if (phase == 0) {
+                    arm(v, r, 2);
+                    v.lookX = side;
+                    if (el > 0.5) {
+                        phase = 1;
+                        mark = t;
+                        objOn = true;
+                        v.kick(1.5);
+                    }
+                } else if (phase == 1) {
+                    arm(v, r, 0);
+                    float[] p = boomerang(v, t, v.lift());
+                    ox = p[0];
+                    oy = p[1];
+                    float gap = ox - center(v);
+                    v.lookX = Math.abs(gap) < 8 * d ? 0 : gap > 0 ? 1 : -1;
+                    v.lookY = oy < v.posY - 22 * S ? -1 : 0;
+                    if (t - mark >= 2.6) {
+                        phase = 2;
+                        mark = t;
+                        objOn = false;
+                        if (variant == 1) {
+                            v.surpriseFor = 0.9;
+                            v.annoyedFor = 1.2;
+                            v.kick(3.5);
+                            for (int i = 0; i < 4; i++) {
+                                double a = -Math.PI / 2 + (i - 1.5) * 0.6;
+                                puff(v, "STAR", center(v), sy(v, top(v), v.lift()), (float) Math.cos(a) * 60 * d, (float) Math.sin(a) * 60 * d, 0.7f, 0, S);
+                            }
+                            v.spawn(bmp("BOOMERANG")[0], center(v), sy(v, top(v) - 2, v.lift()), side * 50 * d, -60 * d, 1.0f, 500 * d, 0, 1, S, true);
+                            maybeSay(v, "BOOMERANG_BONK", 0.8);
+                        } else {
+                            v.happyFor = 1.0;
+                            v.kick(1.5);
+                            maybeSay(v, "BOOMERANG_CATCH", 0.5);
+                        }
+                    }
+                } else {
+                    if (variant == 0) {
+                        arm(v, r, 2);
+                    }
+                    if (t - mark > 1.0) {
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case GARDEN: {
+                boolean r = side > 0;
+                v.lookX = side;
+                v.lookY = 1;
+                boolean watering = el > 1 && el < 6.5;
+                arm(v, r, watering ? 1 : 0);
+                if (watering && t >= nextEvent) {
+                    nextEvent = t + 0.12;
+                    float x = sx(v, handPx(v, r) + (r ? 6.5f : -5.5f)), y = sy(v, handPy(v, r) - 1, v.lift());
+                    float speed = 120 * d;
+                    puff(v, "DROP", x, y, 0, speed, Math.max(0.05f, (v.posY - 2 * S - y) / speed), 0, S * 0.6f);
+                }
+                if (phase == 0 && el > 7) {
+                    phase = 1;
+                    v.happyFor = 2;
+                    v.heart();
+                    v.kick(2);
+                    maybeSay(v, "GARDEN_DONE", 0.8);
+                }
+                if (t > actEnd) {
+                    if (flowers.size() >= 3) {
+                        flowers.remove(0);
+                    }
+                    flowers.add(new float[]{sx(v, mx(r, 28, 5)), (float) (t + 600)});
+                    end(v);
+                }
+                break;
+            }
+            case BOWLING: {
+                boolean r = side > 0;
+                if (phase == 0) {
+                    arm(v, r, el < 0.5 ? 2 : 0);
+                    v.lookX = side;
+                    if (el > 0.8) {
+                        phase = 1;
+                        bx = center(v) + side * 12 * S;
+                        v.kick(1.5);
+                    }
+                } else if (phase == 1) {
+                    bx += side * 190 * d * f;
+                    v.lookX = side;
+                    if ((side > 0 && bx >= ox - 5 * S) || (side < 0 && bx <= ox + 5 * S)) {
+                        phase = 2;
+                        mark = t;
+                        int down = variant == 1 ? 3 : 1 + rng.nextInt(2);
+                        for (int i = 0; i < 3 && down > 0; i++) {
+                            int k = variant == 1 ? i : rng.nextInt(3);
+                            if (pins[k]) {
+                                pins[k] = false;
+                                down--;
+                                v.spawn(bmp("PIN")[0], ox + (k - 1) * 4 * S, v.posY - 3 * S, side * (60 + rng.nextFloat() * 80) * d,
+                                        -(120 + rng.nextFloat() * 100) * d, 1.0f, 500 * d, 0, 1, S, true);
+                            }
+                        }
+                        if (variant == 1) {
+                            v.happyFor = 2;
+                            v.kick(2.5);
+                            maybeSay(v, "BOWLING_STRIKE", 0.9);
+                        } else {
+                            v.annoyedFor = 1.0;
+                            maybeSay(v, "BOWLING_MISS", 0.8);
+                        }
+                    }
+                } else {
+                    bx += side * 190 * d * f;
+                    if (variant == 1) {
+                        v.armLiftL = 2;
+                        v.armLiftR = 2;
+                    }
+                    if (t - mark > 2.2) {
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case KARATE: {
+                boolean r = side > 0;
+                v.lookX = side;
+                v.lookY = 1;
+                if (el < 1.2) {
+                    v.face = SquibView.Face.ANNOYED;
+                    arm(v, r, 3);
+                } else {
+                    if (phase == 0) {
+                        phase = 1;
+                        float x = sx(v, mx(r, 27, 9) + 4.5f), y = sy(v, 15.5f, 0);
+                        v.spawn(bmp("HALF_PLANK")[0], x - 2 * S, y, -60 * d, -160 * d, 1.0f, 500 * d, 0, 1, S, true);
+                        v.spawn(bmp("HALF_PLANK")[1], x + 2 * S, y, 60 * d, -160 * d, 1.0f, 500 * d, 0, 1, S, true);
+                        for (int i = 0; i < 6; i++) {
+                            puff(v, "CRUMB1", x, y, (rng.nextFloat() - 0.5f) * 140 * d, -(40 + rng.nextFloat() * 90) * d, 0.8f, 400 * d, S);
+                        }
+                        v.kick(2.5);
+                        maybeSay(v, "KARATE", 0.85);
+                    }
+                    arm(v, r, 0);
+                    if (el > 1.6) {
+                        v.face = SquibView.Face.HAPPY;
+                        v.armLiftL = 2;
+                        v.armLiftR = 2;
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case WORKOUT: {
+                int rep = (int) (el / 0.75);
+                boolean r = rep < 4 ? right : !right;
+                boolean up = (el % 0.75) > 0.35;
+                arm(v, r, up ? 3 : 0);
+                arm(v, !r, 0);
+                v.face = up ? SquibView.Face.ANNOYED : SquibView.Face.OPEN;
+                if (rep != count) {
+                    count = rep;
+                    puff(v, "DROP", sx(v, r ? 20 : 7), sy(v, top(v), v.lift()), (r ? 1 : -1) * 50 * d, -60 * d, 0.6f, 300 * d, S * 0.6f);
+                }
+                if (rep >= 8) {
+                    v.happyFor = 1.2;
+                    v.kick(2);
+                    end(v);
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case FRIEND: {
+                float stop = center(v) + side * 26 * S;
+                if (phase == 0) { // walking in
+                    float dir = stop > ox ? 1 : -1;
+                    ox += dir * 70 * d * f;
+                    v.lookX = side;
+                    if ((dir > 0 && ox >= stop) || (dir < 0 && ox <= stop)) {
+                        ox = stop;
+                        phase = 1;
+                        mark = t;
+                        v.happyFor = 2.5;
+                        maybeSay(v, "FRIEND", 0.9);
+                    }
+                } else if (phase == 1) { // saying hi
+                    arm(v, side > 0, ((int) ((t - mark) * 5)) % 2 == 0 ? 2 : 1);
+                    v.lookX = side;
+                    if (t >= nextEvent) {
+                        nextEvent = t + 0.8;
+                        v.hop();
+                        v.heart();
+                        v.spawn(bmp("HEART_SMALL", new String[]{".r.r.", "rrrrr", ".rrr.", "..r.."})[0], ox, v.posY - 12 * S,
+                                0, -40 * d, 1.2f, -8 * d, 0, 0.5f, v.T, true);
+                    }
+                    if (t - mark > 3) {
+                        phase = 2;
+                        maybeSay(v, "FRIEND_BYE", 0.6);
+                    }
+                } else { // walking off
+                    float dir = side;
+                    ox += dir * 70 * d * f;
+                    arm(v, side > 0, ((int) (t * 5)) % 2 == 0 ? 2 : 1);
+                    v.lookX = side;
+                    if (ox < -40 * d || ox > v.screenW + 40 * d) {
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case BLOCKS: {
+                boolean r = side > 0;
+                v.lookX = side;
+                if (count < 4) {
+                    arm(v, r, Math.min(3, count));
+                    v.lookY = 1;
+                    if (t >= nextEvent) {
+                        count++;
+                        nextEvent = t + 0.9;
+                        v.kick(0.8);
+                        if (count == 4) {
+                            mark = t;
+                        }
+                    }
+                } else if (phase == 0) {
+                    arm(v, r, 0);
+                    v.lookY = -1;
+                    if (t - mark > 1.6) {
+                        phase = 1;
+                        mark = t;
+                        if (variant == 1) {
+                            String[] cs = {"r", "y", "m", "g"};
+                            float x0 = mx(r, 28, 3);
+                            for (int i = 0; i < 4; i++) {
+                                String ch = cs[i];
+                                v.spawn(bmp("BLOCK" + ch, block(ch))[0], sx(v, x0 + 1.5f), sy(v, 18.5f - i * 3, 0),
+                                        side * (30 + i * 35) * d, -(30 + i * 20) * d, 1.2f, 500 * d, 0, 1, S, true);
+                            }
+                            v.surpriseFor = 0.8;
+                            maybeSay(v, "BLOCKS_FALL", 0.8);
+                        } else {
+                            v.happyFor = 1.5;
+                            maybeSay(v, "BLOCKS_DONE", 0.7);
+                        }
+                    }
+                } else {
+                    if (variant == 0) {
+                        v.armLiftL = 2;
+                        v.armLiftR = 2;
+                    }
+                    if (t - mark > 1.5) {
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case MAIL: {
+                if (phase == 0) {
+                    oy += 50 * d * f;
+                    ox += (float) Math.sin(t * 3) * 35 * d * f;
+                    float gap = ox - center(v);
+                    v.lookX = Math.abs(gap) < 8 * d ? 0 : gap > 0 ? 1 : -1;
+                    v.lookY = -1;
+                    float catchY = sy(v, top(v) - 6, v.lift());
+                    float targetX = center(v);
+                    ox += (targetX - ox) * Math.min(1, 1.5f * f);
+                    if (oy >= catchY) {
+                        phase = 1;
+                        mark = t;
+                        v.happyFor = 1;
+                        v.kick(1.5);
+                        maybeSay(v, "MAIL", 0.6);
+                    }
+                } else {
+                    v.armLiftL = 1;
+                    v.armLiftR = 1;
+                    v.lookX = 0;
+                    v.lookY = 1;
+                    if (phase == 1 && t - mark > 1.4) {
+                        phase = 2;
+                        v.speech = null;
+                        maybeSay(v, "MAIL_READ", 0.95);
+                    }
+                    if (t - mark > 5.5) {
+                        v.happyFor = 1.2;
+                        v.heart();
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case MEDITATE: {
+                v.seated = true;
+                v.face = SquibView.Face.SLEEPY;
+                v.armLiftL = 1;
+                v.armLiftR = 1;
+                double left = actEnd - t;
+                int up = el < 0.8 ? 1 : el < 1.6 ? 2 : 3;
+                if (left < 1.6) {
+                    up = left < 0.8 ? 1 : 2;
+                }
+                if (up == 3 && ((int) (el / 0.9)) % 2 == 1) {
+                    up = 4;
+                }
+                v.raise = up;
+                if (t >= nextEvent) {
+                    nextEvent = t + rand(0.5, 1.0);
+                    puff(v, "SPARK", center(v) + (rng.nextFloat() - 0.5f) * 30 * S, v.posY - rng.nextFloat() * 14 * S, 0, -12 * d, 0.9f, 0, S);
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case SPINNER: {
+                arm(v, right, 1);
+                v.lookX = v.facing;
+                v.lookY = -1;
+                if (el > 2.2) {
+                    v.face = SquibView.Face.HAPPY;
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case HICCUP: {
+                int hic = el < 0.3 ? 0 : el < 1.1 ? 1 : el < 1.9 ? 2 : 3;
+                if (hic != count) {
+                    count = hic;
+                    v.hop();
+                    v.surpriseFor = 0.3;
+                    v.kick(-1.5);
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case SHAKE: {
+                int beat = (int) (el / 0.07);
+                v.lookX = beat % 2 == 0 ? -1 : 1;
+                v.armLiftL = beat % 2 == 0 ? 2 : 0;
+                v.armLiftR = 2 - v.armLiftL;
+                v.face = SquibView.Face.BLINK;
+                if (beat != count) {
+                    count = beat;
+                    if (beat % 3 == 0) {
+                        puff(v, "DROP", center(v) + (beat % 2 == 0 ? -1 : 1) * 10 * S, sy(v, top(v) + 3, v.lift()),
+                                (beat % 2 == 0 ? -1 : 1) * 90 * d, -50 * d, 0.5f, 300 * d, S * 0.6f);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case WHISTLE: {
+                v.lookY = -1;
+                v.lookX = 0;
+                if (t >= nextEvent) {
+                    nextEvent = t + 0.6;
+                    v.note();
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
             default:
                 end(v);
         }
+    }
+
+    static String[] block(String ch) {
+        String dark = ch.equals("y") ? "Y" : ch.toUpperCase();
+        return new String[]{ch + ch + ch, ch + dark + ch, ch + ch + dark};
+    }
+
+    static float[] stickTip(SquibView v, float lift) {
+        boolean r = side > 0;
+        return new float[]{sx(v, handPx(v, r) + (r ? 6.5f : -5.5f)), sy(v, handPy(v, r) + 3.5f, lift)};
+    }
+
+    static float[] boomerang(SquibView v, double t, float lift) {
+        boolean r = side > 0;
+        float d = v.d;
+        double p = Math.min(1, (t - mark) / 2.6);
+        float hx = sx(v, handPx(v, r) + 0.5f), hy = sy(v, handPy(v, r), lift);
+        float x = hx + side * 150 * d * (float) Math.sin(Math.PI * p);
+        float y = hy - 70 * d * (float) Math.sin(Math.PI * p) + 30 * d * (float) Math.sin(2 * Math.PI * p);
+        if (variant == 1 && p > 0.75) { // drifts onto his head instead of his hand
+            float k = (float) ((p - 0.75) / 0.25);
+            x += (center(v) - hx) * k;
+            y += (sy(v, top(v) - 1, lift) - hy) * k;
+        }
+        return new float[]{x, y};
     }
 
     static void poof(SquibView v, float x, float y) {
@@ -1897,6 +2511,170 @@ final class Fun {
             case SELFIE:
                 held(v, c, lift, "PHONE", right, false, false);
                 break;
+            case GUM: {
+                float cy = top(v) + 5;
+                if (phase == 0) {
+                    float r = (float) Math.min(1, el / (mark - actStart)) * 6.5f;
+                    for (int gy = (int) -Math.ceil(r); gy <= Math.ceil(r); gy++) {
+                        for (int gx = (int) -Math.ceil(r); gx <= Math.ceil(r); gx++) {
+                            float dist = (float) Math.hypot(gx, gy);
+                            if (dist <= r) {
+                                char ch = dist > r - 1 ? 'I' : 'i';
+                                if (r >= 2.5f && gx == (int) -(r * 0.4f) && gy == (int) -(r * 0.4f)) {
+                                    ch = 'w';
+                                }
+                                gline(v, c, 13 + gx, cy + gy, 13 + gx, cy + gy, ch, lift);
+                            }
+                        }
+                    }
+                } else if (v.t < mark + 2.2) {
+                    int[][] splat = {{8, 0}, {10, 1}, {12, 0}, {15, 1}, {17, 0}, {19, 1}, {9, 3}, {14, 4}, {18, 3}, {11, 5}, {16, 6}, {13, 2}};
+                    for (int[] sp : splat) {
+                        gline(v, c, sp[0], top(v) + sp[1], sp[0], top(v) + sp[1], 'i', lift);
+                    }
+                }
+                break;
+            }
+            case CAMPFIRE: {
+                boolean r = side > 0;
+                put(v, c, ((int) (v.t * 6)) % 2 == 0 ? "FIRE1" : "FIRE2", 0, mx(r, 28, 7), 14, 0, 255);
+                double eatAt = mark + (variant >= 1 ? 1.4 : 0);
+                if (v.t < eatAt + 1.2) {
+                    float hx = handPx(v, r), hy = handPy(v, r);
+                    float tx = hx + (r ? 6 : -6), ty = hy + 3;
+                    gline(v, c, hx, hy, tx, ty, 'k', lift);
+                    char m = v.t < mark - 2 ? 'p' : v.t < mark ? 'j' : variant >= 1 ? 'o' : 'Y';
+                    gline(v, c, tx, ty, tx + 1, ty, m, lift);
+                    gline(v, c, tx, ty + 1, tx + 1, ty + 1, m, lift);
+                    if (variant == 1 && phase == 1) {
+                        gline(v, c, tx, ty - 1, tx + 1, ty - 1, 'f', lift);
+                        gline(v, c, tx + (((int) (v.t * 8)) % 2), ty - 2, tx + (((int) (v.t * 8)) % 2), ty - 2, 'F', lift);
+                    }
+                }
+                break;
+            }
+            case DRUMS: {
+                put(v, c, "DRUM", 0, 9, 13, lift, 255);
+                for (int k = 0; k < 2; k++) {
+                    boolean r = k == 1;
+                    float hx = handPx(v, r), hy = handPy(v, r);
+                    boolean up = (r ? v.armLiftR : v.armLiftL) > 0;
+                    if (up) { // raised for the next hit: stick points up and out, away from his face
+                        gline(v, c, hx, hy, hx + (r ? 2 : -2), hy - 4, 'K', lift);
+                    } else {
+                        gline(v, c, hx, hy, hx + (r ? -4 : 4), hy + 4, 'K', lift);
+                    }
+                }
+                break;
+            }
+            case HULA: {
+                float cx = 13.5f + (float) Math.sin(el * 9) * 2.5f, cy = 13;
+                int bl = 6 - v.squashLevel, br = 21 + v.squashLevel;
+                for (int i = 0; i < 48; i++) {
+                    double a = i * Math.PI * 2 / 48;
+                    float gx = cx + (float) Math.cos(a) * 11, gy = cy + (float) Math.sin(a) * 1.6f;
+                    if (Math.sin(a) >= 0 || gx < bl - 0.5f || gx > br + 0.5f) {
+                        gline(v, c, gx, gy, gx, gy, (i / 4) % 2 == 0 ? 'u' : 'y', lift);
+                    }
+                }
+                break;
+            }
+            case BOOMERANG: {
+                boolean r = side > 0;
+                if (phase == 0) {
+                    held(v, c, lift, "BOOMERANG", r, false, false);
+                } else if (phase == 1) {
+                    int[] spin = {0, 2, 1, 3};
+                    Bitmap b = bmp("BOOMERANG")[spin[((int) (v.t / 0.07)) % 4]];
+                    drawBmp(c, b, ox - b.getWidth() * S / 2, oy - b.getHeight() * S / 2, S, 255);
+                } else if (variant == 0) {
+                    held(v, c, lift, "BOOMERANG", r, false, false);
+                }
+                break;
+            }
+            case GARDEN: {
+                boolean r = side > 0;
+                float x0 = mx(r, 28, 5);
+                if (el > 0.4) {
+                    put(v, c, "SOIL", 0, x0, 18, 0, 255);
+                }
+                int stage = el < 1.5 ? -1 : el < 3 ? 0 : el < 4.5 ? 1 : el < 6 ? 2 : 3;
+                if (stage >= 0) {
+                    drawBmp(c, bmp("SPROUT" + stage, Art.SPROUT[stage])[0], sx(v, x0), sy(v, 12, 0), S, 255);
+                }
+                if (el > 1 && el < 6.5) {
+                    held(v, c, lift, "CAN", r, false, false);
+                }
+                break;
+            }
+            case BOWLING: {
+                for (int k = 0; k < 3; k++) {
+                    if (pins[k]) {
+                        drawBmp(c, bmp("PIN")[0], ox + (k - 1) * 4 * S - 1.5f * S, v.posY - 5 * S, S, 255);
+                    }
+                }
+                if (phase == 0) {
+                    held(v, c, lift, "BOWL", side > 0, false, false);
+                } else if (bx > -10 * S && bx < v.screenW + 10 * S) {
+                    int[] spin = {0, 2, 1, 3};
+                    drawBmp(c, bmp("BOWL")[spin[((int) (v.t / 0.08)) % 4]], bx - 2 * S, v.posY - 4 * S, S, 255);
+                }
+                break;
+            }
+            case KARATE: {
+                boolean r = side > 0;
+                float x0 = mx(r, 27, 9);
+                put(v, c, "BRICK", 0, x0, 17, 0, 255);
+                put(v, c, "BRICK", 0, x0 + 6, 17, 0, 255);
+                if (phase == 0) {
+                    put(v, c, "PLANK", 0, x0, 15, 0, 255);
+                }
+                break;
+            }
+            case WORKOUT: {
+                int rep = (int) (el / 0.75);
+                held(v, c, lift, "DUMBBELL", rep < 4 ? right : !right, false, false);
+                break;
+            }
+            case FRIEND: {
+                boolean walking = phase != 1;
+                String name = walking && ((int) (v.t * 6)) % 2 == 1 ? "FRIEND2" : "FRIEND1";
+                boolean facingRight = phase == 1 ? side < 0 : (phase == 0 ? (center(v) + side * 26 * S) > ox : side > 0);
+                float hop = phase == 1 ? -(float) Math.abs(Math.sin((v.t - mark) * 4)) * 3 * S : 0;
+                drawBmp(c, bmp(name)[facingRight ? 0 : 1], ox - 6 * S, v.posY - 8 * S + Math.round(hop / S) * S, S, 255);
+                break;
+            }
+            case BLOCKS: {
+                boolean r = side > 0;
+                if (phase == 0 || variant == 0) {
+                    String[] cs = {"r", "y", "m", "g"};
+                    float x0 = mx(r, 28, 3);
+                    float wob = phase == 0 && count >= 4 ? (float) Math.sin(v.t * 12) * (float) Math.min(1, (v.t - mark) / 1.6) : 0;
+                    for (int i = 0; i < count; i++) {
+                        drawBmp(c, bmp("BLOCK" + cs[i], block(cs[i]))[0], sx(v, x0 + Math.round(wob * i * 0.5f)), sy(v, 17 - i * 3, 0), S, 255);
+                    }
+                }
+                break;
+            }
+            case MAIL: {
+                if (phase == 0) {
+                    drawBmp(c, bmp("ENVELOPE")[0], ox - 3.5f * S, oy - 2.5f * S, S, 255);
+                } else {
+                    put(v, c, "LETTER", 0, 10, top(v) + 3, lift, 255);
+                }
+                break;
+            }
+            case SPINNER: {
+                String name = ((int) (v.t / 0.05)) % 2 == 0 ? "SPINNER1" : "SPINNER2";
+                put(v, c, name, 0, handPx(v, right) - 2, handPy(v, right) - 5, lift, 255);
+                break;
+            }
+        }
+        if (!v.perched && !flowers.isEmpty()) {
+            for (float[] fl : flowers) {
+                drawBmp(c, bmp("SOIL")[0], fl[0], v.floorY - 2 * S, S, 255);
+                drawBmp(c, bmp("SPROUT3", Art.SPROUT[3])[0], fl[0], v.floorY - 8 * S, S, 255);
+            }
         }
     }
 
