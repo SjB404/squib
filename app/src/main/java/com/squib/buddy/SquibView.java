@@ -91,6 +91,8 @@ final class SquibView extends View {
     double noteIn;
     final List<Particle> particles;
     boolean perched;
+    /** Set by Fun while a picked trick needs a different spot: 1 on a cloud, 2 on the floor, 0 normal. */
+    int forcePlace;
     boolean petting;
     final Paint pixels;
     String pkg;
@@ -298,6 +300,15 @@ final class SquibView extends View {
         float f7 = f2 - (2.0f * f5);
         float f8 = (i - f2) - (f5 * 26.0f);
         this.perched = false;
+        if (this.forcePlace != 0) {
+            this.perched = this.forcePlace == 1;
+            if (this.perched) {
+                setFloor(f6, f8 - (this.d * 24.0f), f8);
+            } else {
+                setFloor(floor, f7, f8);
+            }
+            return;
+        }
         switch (kindNow()) {
             case WATCH:
                 setFloor(floor, f8 - (this.d * 12.0f), f8);
@@ -1090,6 +1101,10 @@ final class SquibView extends View {
 
     void trick() {
         Fun.trick(this);
+    }
+
+    void trick(String name, int variant) {
+        Fun.trick(this, name, variant);
     }
 
     void talk() {

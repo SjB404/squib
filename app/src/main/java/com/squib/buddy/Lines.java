@@ -1391,6 +1391,47 @@ final class Lines {
             "*whistles*",
             "*whistles a little tune*",
             "fweet fweet."};
+    static String[] CUBE = {
+            "ok. solving this.",
+            "left, up, left... no.",
+            "i have a system.",
+            "this is a puzzle cube. i am a puzzle squid.",
+            "eight arms would help. i have two."};
+    static String[] CUBE_DONE = {
+            "solved!",
+            "every side. every colour.",
+            "new record. probably.",
+            "too easy.",
+            "i didn't even look it up."};
+    static String[] CUBE_GIVEUP = {
+            "this one's broken.",
+            "who made this.",
+            "i'm peeling the stickers off.",
+            "nope.",
+            "it's unsolvable. i checked."};
+    static String[] CUBE_OOPS = {
+            "...it was solved a second ago.",
+            "i made it worse.",
+            "abstract art.",
+            "oops."};
+    static String[] COIN = {
+            "heads or tails?",
+            "call it.",
+            "flipping for snacks.",
+            "let fate decide."};
+    static String[] COIN_HEADS = {
+            "heads!",
+            "heads. i win.",
+            "heads. as planned."};
+    static String[] COIN_TAILS = {
+            "tails.",
+            "tails. best of three?",
+            "tails. that's fine. totally fine."};
+    static String[] COIN_DROP = {
+            "where'd it go.",
+            "it rolled away.",
+            "...that doesn't count.",
+            "the floor wins."};
     static String[] BEDTIME = {
             "ok. bedtime. for both of us.",
             "*yawn* i'm going to sleep. you should too.",

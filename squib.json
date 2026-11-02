@@ -1502,6 +1502,55 @@
       "*whistles a little tune*",
       "fweet fweet."
     ],
+    "CUBE": [
+      "ok. solving this.",
+      "left, up, left... no.",
+      "i have a system.",
+      "this is a puzzle cube. i am a puzzle squid.",
+      "eight arms would help. i have two."
+    ],
+    "CUBE_DONE": [
+      "solved!",
+      "every side. every colour.",
+      "new record. probably.",
+      "too easy.",
+      "i didn't even look it up."
+    ],
+    "CUBE_GIVEUP": [
+      "this one's broken.",
+      "who made this.",
+      "i'm peeling the stickers off.",
+      "nope.",
+      "it's unsolvable. i checked."
+    ],
+    "CUBE_OOPS": [
+      "...it was solved a second ago.",
+      "i made it worse.",
+      "abstract art.",
+      "oops."
+    ],
+    "COIN": [
+      "heads or tails?",
+      "call it.",
+      "flipping for snacks.",
+      "let fate decide."
+    ],
+    "COIN_HEADS": [
+      "heads!",
+      "heads. i win.",
+      "heads. as planned."
+    ],
+    "COIN_TAILS": [
+      "tails.",
+      "tails. best of three?",
+      "tails. that's fine. totally fine."
+    ],
+    "COIN_DROP": [
+      "where'd it go.",
+      "it rolled away.",
+      "...that doesn't count.",
+      "the floor wins."
+    ],
     "BEDTIME": [
       "ok. bedtime. for both of us.",
       "*yawn* i'm going to sleep. you should too.",

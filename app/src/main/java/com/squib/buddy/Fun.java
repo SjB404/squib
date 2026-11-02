@@ -30,31 +30,31 @@ final class Fun {
             SKATE = 16, ICECREAM = 17, BALLOON = 18, MAGIC = 19, STARGAZE = 20, SNEEZE = 21, JUMPROPE = 22,
             PAINT = 23, SELFIE = 24, CONFETTI = 25, GUM = 26, CAMPFIRE = 27, DRUMS = 28, HULA = 29,
             BOOMERANG = 30, GARDEN = 31, BOWLING = 32, KARATE = 33, WORKOUT = 34, FRIEND = 35, BLOCKS = 36,
-            MAIL = 37, MEDITATE = 38,
-            LAST_ACTIVITY = 38,
+            MAIL = 37, MEDITATE = 38, CUBE = 39,
+            LAST_ACTIVITY = 39,
             // quick fidgets (their own timer)
-            STRETCH = 39, SPIN = 40, TRIP = 41, SCRATCH = 42, YAWN = 43, SPINNER = 44, HICCUP = 45, SHAKE = 46,
-            WHISTLE = 47,
-            FIRST_FIDGET = 39;
+            STRETCH = 40, SPIN = 41, TRIP = 42, SCRATCH = 43, YAWN = 44, SPINNER = 45, HICCUP = 46, SHAKE = 47,
+            WHISTLE = 48, COIN = 49,
+            FIRST_FIDGET = 40;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
     static final String[] NAMES = {"NONE", "BALL", "PLANE", "BUBBLES", "BOOK", "YOYO", "DANCE", "WAVE",
             "BUTTERFLY", "NAP", "TEA", "GUITAR", "JUGGLE", "KITE", "FISHING", "RAIN", "SKATE", "ICECREAM",
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
-            "BLOCKS", "MAIL", "MEDITATE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE"};
+            "BLOCKS", "MAIL", "MEDITATE", "CUBE",
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH,
             ANY, FLOOR, ANY, ANY, ANY, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
-            ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
-            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
+            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2, 5, 1, 2, 2, 2, 25,
-            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-            3, 3, 2, 3, 2, 4, 2, 2, 2};
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
+            3, 3, 2, 3, 2, 4, 2, 2, 2, 3};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -100,6 +100,29 @@ final class Fun {
     static int[] order;
     static final boolean[] pins = new boolean[3];
     static final ArrayList<float[]> flowers = new ArrayList<float[]>(); // {x, goneAt}
+    static double gap;
+
+    /** The variant asked for in the picker in his settings, or -1 for a random one. Only used inside start(). */
+    static int want = -1;
+
+    // ---------- looks for props drawn by Props (one animation, many versions) ----------
+    static int[] ballLook = {5, 0, 0, 1};
+    static int[][] juggleLooks = new int[0][];
+    static int balls = 3;
+    static float roll;
+    static int spinType, spinBody, spinWeight;
+    static double spinAngle, spinVel, reflickAt;
+    static Props.Cube cube;
+    static final ArrayList<int[]> cubeMoves = new ArrayList<int[]>();
+    static int[] lastMove;
+    static double lastMoveAt;
+    static String cubeKey;
+    static Bitmap cubeBmp;
+    static int metal;
+    static boolean heads;
+    static int[] hulaColors = {4, 1};
+    static int[] blockColors = {0, 1, 2, 3};
+    static int yoyoColor = 4;
 
     // ---------- minecraft state ----------
     static final String[] ITEMS = {"SWORD", "PICK", "AXE", "SHOVEL", "GEM"};
@@ -134,6 +157,9 @@ final class Fun {
         Bitmap[] b = cache.get(key);
         if (b != null) {
             return b;
+        }
+        if (cache.size() > 800) { // made-on-the-fly props add up over days; they're cheap to make again
+            cache.clear();
         }
         int w = 0;
         for (String r : rows) {
@@ -241,9 +267,10 @@ final class Fun {
 
     /** Draws a prop held in one hand. artFacesIn: the art points toward his body (like the mug). */
     static void held(SquibView v, Canvas c, float lift, String name, boolean right, boolean rotated, boolean artFacesIn) {
-        String[] r = rows(name);
-        Bitmap[] b = bmp(name, r);
-        int[] g = grip(name);
+        held(v, c, lift, rows(name), bmp(name), grip(name), right, rotated, artFacesIn);
+    }
+
+    static void held(SquibView v, Canvas c, float lift, String[] r, Bitmap[] b, int[] g, boolean right, boolean rotated, boolean artFacesIn) {
         int w = r[0].length(), h = r.length;
         boolean mirror = artFacesIn ? right : !right;
         int index = (rotated ? 2 : 0) + (mirror ? 1 : 0);
@@ -307,6 +334,113 @@ final class Fun {
 
     static double rand(double lo, double hi) {
         return lo + rng.nextDouble() * (hi - lo);
+    }
+
+    /** A weighted random index that ignores the picker. */
+    static int chooseRandom(double... w) {
+        int keep = want;
+        want = -1;
+        int i = chooseW(w);
+        want = keep;
+        return i;
+    }
+
+    /** One of n variants: the one picked in his settings, or a random one. */
+    static int choose(int n) {
+        return want >= 0 ? want % n : rng.nextInt(n);
+    }
+
+    /** Like choose, but random picks follow the weights. */
+    static int chooseW(double... w) {
+        if (want >= 0) {
+            return want % w.length;
+        }
+        double total = 0;
+        for (double x : w) {
+            total += x;
+        }
+        double r = rng.nextDouble() * total;
+        for (int i = 0; i < w.length; i++) {
+            r -= w[i];
+            if (r < 0) {
+                return i;
+            }
+        }
+        return w.length - 1;
+    }
+
+    /** Name shown in the picker. */
+    static String label(int a) {
+        switch (a) {
+            case CONFETTI: return "party confetti";
+            case ICECREAM: return "ice cream";
+            case JUMPROPE: return "jump rope";
+            case CUBE: return "puzzle cube";
+            case SPINNER: return "fidget spinner";
+            case COIN: return "coin flip";
+            case HULA: return "hula hoop";
+            case YOYO: return "yo-yo";
+            default: return NAMES[a].toLowerCase();
+        }
+    }
+
+    /** Versions the picker can ask for, or null if there's only one. */
+    static String[] variantNames(int a) {
+        switch (a) {
+            case BALL: return Props.PATTERNS;
+            case JUGGLE: return new String[]{"3 balls", "4 balls", "5 balls", "drops them"};
+            case FISHING: return new String[]{"shrimp", "fish", "old boot"};
+            case BALLOON: return Arrays.copyOf(Props.PAIR_NAMES, Props.BRIGHT);
+            case MAGIC: return new String[]{"shrimp", "dove", "tiny squid", "flowers"};
+            case PAINT: return new String[]{"shrimp", "sun", "heart", "himself", "landscape"};
+            case CAMPFIRE: return new String[]{"toasted", "catches fire"};
+            case BOOMERANG: return new String[]{"catches it", "bonks him"};
+            case BOWLING: return new String[]{"misses", "strike"};
+            case BLOCKS: return new String[]{"stays up", "falls over"};
+            case SPINNER: return Props.SPINNERS;
+            case CUBE: return new String[]{"solves it", "speed solve", "2x2 cube", "gives up", "messes it up"};
+            case COIN: return new String[]{"gold", "silver", "copper", "drops it"};
+            default: return null;
+        }
+    }
+
+    /** Art with some colours swapped: from.charAt(i) becomes to.charAt(i). */
+    static Bitmap[] tint(String name, String from, String to) {
+        String key = name + "|" + from + ">" + to;
+        Bitmap[] b = cache.get(key);
+        if (b != null) {
+            return b;
+        }
+        String[] r = rows(name).clone();
+        for (int i = 0; i < r.length; i++) {
+            StringBuilder sb = new StringBuilder(r[i]);
+            for (int k = 0; k < sb.length(); k++) {
+                int j = from.indexOf(sb.charAt(k));
+                if (j >= 0) {
+                    sb.setCharAt(k, to.charAt(j));
+                }
+            }
+            r[i] = sb.toString();
+        }
+        return bmp(key, r);
+    }
+
+    /** Colours of a toy in colour pair i, for tint(): its light and dark. */
+    static String pair(int i) {
+        return Props.PAIRS[i % Props.PAIRS.length];
+    }
+
+    static Bitmap[] ball(int[] look, int rot) {
+        return bmp(Props.ballKey(look, rot), Props.ballRows(look, rot));
+    }
+
+    /** One grid pixel in any colour. */
+    static void dot(SquibView v, Canvas c, float gx, float gy, int color, int a, float lift) {
+        ink.setColor(color);
+        ink.setAlpha(Math.max(0, Math.min(255, a * (color >>> 24) / 255)));
+        float x = sx(v, gx), y = sy(v, gy, lift);
+        c.drawRect(x, y, x + v.S, y + v.S, ink);
+        ink.setColor(0xFF1D1D1D);
     }
 
     // ================= main tick =================
@@ -427,7 +561,10 @@ final class Fun {
     }
 
     static int pickFidget(SquibView v) {
-        int[] options = {STRETCH, SPIN, TRIP, SCRATCH, YAWN, SPINNER, HICCUP, SHAKE, WHISTLE};
+        int[] options = new int[NAMES.length - FIRST_FIDGET];
+        for (int i = 0; i < options.length; i++) {
+            options[i] = FIRST_FIDGET + i;
+        }
         int total = 0;
         for (int a : options) {
             total += allowed(v, a) ? WEIGHT[a] : 0;
@@ -468,6 +605,43 @@ final class Fun {
         start(v, pick(v, v.kindNow()));
     }
 
+    /** The picker in his settings: do this one now, as this version (-1: random). */
+    static void trick(SquibView v, String name, int var) {
+        int a = -1;
+        for (int i = 1; i < NAMES.length; i++) {
+            if (NAMES[i].equals(name)) {
+                a = i;
+            }
+        }
+        if (a < 0 || inMc) {
+            trick(v);
+            return;
+        }
+        if (!v.visible()) {
+            return;
+        }
+        if (v.kindNow() == Apps.Kind.WATCH) {
+            v.say("shh. i'm watching.", 0);
+            return;
+        }
+        end(v);
+        if (v.motion == SquibView.Motion.SLEEP || v.motion == SquibView.Motion.WANDER) {
+            v.setMotion(SquibView.Motion.IDLE);
+        }
+        v.seated = false;
+        int where = WHERE[a];
+        if ((where == FLOOR && v.perched) || (where == PERCH && !v.perched)) {
+            // Hop to wherever this one needs (a cloud for fishing, the floor for the rest) until it's done.
+            poof(v, center(v), v.posY - 8 * v.S);
+            v.forcePlace = where == PERCH ? 1 : 2;
+            v.place();
+            poof(v, center(v), v.posY - 8 * v.S);
+        }
+        want = var;
+        start(v, a);
+        want = -1;
+    }
+
     static void start(SquibView v, int a) {
         double t = v.t;
         float d = v.d;
@@ -487,6 +661,8 @@ final class Fun {
         }
         switch (a) {
             case BALL:
+                ballLook = Props.ballLook(rng, 4, 7, want >= 0 ? want % Props.PATTERNS.length : -1);
+                roll = 0;
                 bx = clamp(center(v) + (rng.nextBoolean() ? -1 : 1) * (40 + rng.nextFloat() * 60) * d,
                         v.minX + v.S * 14, v.maxX + v.S * 14);
                 bh = 170 * d;
@@ -510,6 +686,7 @@ final class Fun {
                 flipUntil = 0;
                 break;
             case YOYO:
+                yoyoColor = rng.nextInt(Props.BRIGHT);
                 actEnd = t + rand(7, 11);
                 break;
             case DANCE:
@@ -540,17 +717,32 @@ final class Fun {
                 actEnd = t + rand(7, 11);
                 nextEvent = t + 0.4;
                 break;
-            case JUGGLE:
+            case JUGGLE: {
                 actEnd = t + rand(6, 9);
-                variant = rng.nextDouble() < 0.3 ? 1 : 0; // 1: drops them at the end
+                int how = chooseW(0.45, 0.17, 0.08, 0.3); // 3, 4 or 5 balls, or drops them
+                variant = how == 3 ? 1 : 0; // 1: drops them at the end
+                balls = how < 3 ? 3 + how : 3 + chooseRandom(0.6, 0.3, 0.1);
+                int size = balls >= 5 ? 3 : 3 + rng.nextInt(2);
+                int pat = rng.nextBoolean() ? rng.nextInt(Props.PATTERNS.length) : -1; // a matching set, or all different
+                int first = rng.nextInt(Props.BRIGHT);
+                juggleLooks = new int[balls][];
+                for (int i = 0; i < balls; i++) {
+                    int[] look = Props.ballLook(rng, size, size, pat);
+                    look[2] = (first + i * 2) % Props.BRIGHT;
+                    if (look[3] == look[2]) {
+                        look[3] = (look[2] + 3) % Props.PAIRS.length;
+                    }
+                    juggleLooks[i] = look;
+                }
                 break;
+            }
             case KITE:
                 v.facing = center(v) < v.screenW / 2f ? 1 : -1;
                 actEnd = t + rand(10, 16);
                 break;
             case FISHING:
                 v.facing = center(v) < v.screenW / 2f ? 1 : -1; // cast toward the middle of the screen
-                variant = rng.nextDouble() < 0.55 ? 0 : rng.nextDouble() < 0.67 ? 1 : 2; // shrimp, fish, boot
+                variant = chooseW(0.55, 0.3, 0.15); // shrimp, fish, boot
                 bh = (float) rand(90, 150) * d; // line length
                 mark = t + 0.8 + 1.5 + rand(3, 7); // when he gets a bite
                 actEnd = t + 30;
@@ -572,14 +764,14 @@ final class Fun {
                 actEnd = t + 30;
                 break;
             case BALLOON:
-                variant = rng.nextInt(5);
+                variant = choose(Props.BRIGHT); // colour
                 actEnd = t + rand(7, 11);
                 nextEvent = t + 1.5;
                 break;
             case MAGIC:
                 side = center(v) < v.screenW / 2f ? 1 : -1;
                 v.facing = side;
-                variant = rng.nextInt(4);
+                variant = choose(4);
                 actEnd = t + 5;
                 break;
             case STARGAZE:
@@ -596,7 +788,7 @@ final class Fun {
             case PAINT:
                 side = center(v) < v.screenW / 2f ? 1 : -1;
                 v.facing = side;
-                variant = rng.nextInt(Art.PAINTINGS.length);
+                variant = choose(Art.PAINTINGS.length);
                 order = new int[48];
                 for (int i = 0; i < 48; i++) {
                     order[i] = i;
@@ -624,7 +816,7 @@ final class Fun {
             case CAMPFIRE:
                 side = center(v) < v.screenW / 2f ? 1 : -1;
                 v.facing = side;
-                variant = rng.nextDouble() < 0.45 ? 1 : 0; // 1: the marshmallow catches fire
+                variant = chooseW(0.55, 0.45); // 1: the marshmallow catches fire
                 mark = t + 4.5; // toasted
                 actEnd = mark + (variant == 1 ? 1.4 : 0) + 2.8;
                 nextEvent = t;
@@ -634,13 +826,14 @@ final class Fun {
                 count = -1;
                 break;
             case HULA:
+                hulaColors = Props.twoColors(rng, Props.BRIGHT);
                 actEnd = t + rand(6, 9);
                 nextEvent = t;
                 break;
             case BOOMERANG:
                 side = center(v) < v.screenW / 2f ? 1 : -1;
                 v.facing = side;
-                variant = rng.nextDouble() < 0.3 ? 1 : 0; // 1: it bonks him on the way back
+                variant = chooseW(0.7, 0.3); // 1: it bonks him on the way back
                 actEnd = t + 30;
                 break;
             case GARDEN:
@@ -652,7 +845,9 @@ final class Fun {
             case BOWLING:
                 side = center(v) < v.screenW / 2f ? 1 : -1;
                 v.facing = side;
-                variant = rng.nextDouble() < 0.65 ? 1 : 0; // 1: strike
+                variant = chooseW(0.35, 0.65); // 1: strike
+                ballLook = Props.ballLook(rng, 4, 4, new int[]{0, 2, 3, 6}[rng.nextInt(4)]);
+                roll = 0;
                 pins[0] = pins[1] = pins[2] = true;
                 ox = clamp(center(v) + side * 150 * d, 20 * d, v.screenW - 20 * d); // pins
                 actEnd = t + 30;
@@ -675,7 +870,10 @@ final class Fun {
             case BLOCKS:
                 side = center(v) < v.screenW / 2f ? 1 : -1;
                 v.facing = side;
-                variant = rng.nextDouble() < 0.45 ? 1 : 0; // 1: the tower falls
+                variant = chooseW(0.55, 0.45); // 1: the tower falls
+                for (int i = 0; i < 4; i++) {
+                    blockColors[i] = i == 0 ? rng.nextInt(Props.BRIGHT) : (blockColors[i - 1] + 1 + rng.nextInt(Props.BRIGHT - 1)) % Props.BRIGHT;
+                }
                 nextEvent = t + 0.6;
                 actEnd = t + 30;
                 break;
@@ -689,27 +887,77 @@ final class Fun {
                 actEnd = t + rand(9, 12);
                 nextEvent = t + 1;
                 break;
+            case CUBE: {
+                side = center(v) < v.screenW / 2f ? 1 : -1;
+                variant = chooseW(0.35, 0.15, 0.2, 0.15, 0.15); // solves it, speed solve, 2x2, gives up, messes it up
+                cube = new Props.Cube(variant == 2 ? 2 : 3);
+                cubeMoves.clear();
+                lastMove = null;
+                cubeKey = null;
+                ArrayList<int[]> scramble = new ArrayList<int[]>();
+                int[] prev = null;
+                int k = variant == 4 ? 0 : variant == 1 ? 12 : variant == 2 ? 5 : 7 + rng.nextInt(3);
+                for (int i = 0; i < k; i++) {
+                    prev = cube.randomMove(rng, prev);
+                    cube.turn(prev);
+                    scramble.add(prev);
+                }
+                if (variant <= 2) { // undo the scramble, last move first: that solves it for real
+                    for (int i = scramble.size() - 1; i >= 0; i--) {
+                        int[] m = scramble.get(i);
+                        cubeMoves.add(new int[]{m[0], m[1], -m[2]});
+                    }
+                } else { // just twists it about
+                    int moves = 6 + rng.nextInt(4);
+                    for (int i = 0; i < moves; i++) {
+                        prev = cube.randomMove(rng, prev);
+                        cubeMoves.add(prev);
+                    }
+                }
+                gap = variant == 1 ? 0.16 : rand(0.4, 0.6);
+                mark = t + rand(0.8, 1.4); // first twist
+                actEnd = t + 60; // ends itself
+                break;
+            }
             case SPINNER:
-                actEnd = t + 3;
+                spinType = choose(Props.SPINNERS.length);
+                int[] sc = Props.twoColors(rng, Props.BRIGHT);
+                spinBody = sc[0];
+                spinWeight = rng.nextDouble() < 0.3 ? 9 : sc[1];
+                spinAngle = rng.nextDouble() * Math.PI * 2;
+                spinVel = 0;
+                actEnd = t + rand(2.5, 5);
+                reflickAt = rng.nextDouble() < 0.4 ? t + rand(1.3, actEnd - t - 0.7) : 1e18;
                 break;
             case HICCUP:
-                actEnd = t + 2.6;
+                count = 0;
+                gap = rand(0.55, 0.9);
+                actEnd = t + 0.3 + (2 + rng.nextInt(4)) * gap + 0.3;
                 break;
             case SHAKE:
-                actEnd = t + 1.2;
+                actEnd = t + rand(0.9, 1.7);
                 break;
             case WHISTLE:
-                actEnd = t + 2.4;
+                actEnd = t + rand(1.8, 3.6);
                 nextEvent = t + 0.3;
+                gap = rand(0.45, 0.8);
                 break;
             case STRETCH:
                 v.kick(-2.5);
-                actEnd = t + 1.6;
+                actEnd = t + rand(1.3, 2.3);
                 break;
             case SPIN:
                 v.hop();
-                actEnd = t + 1.2;
+                actEnd = t + rand(0.9, 1.7);
                 nextEvent = t;
+                break;
+            case COIN:
+                metal = want >= 0 && want < 3 ? want : rng.nextInt(Props.METALS.length);
+                variant = want == 3 ? 1 : want >= 0 ? 0 : rng.nextDouble() < 0.2 ? 1 : 0; // 1: drops it
+                heads = rng.nextBoolean();
+                mark = t + rand(0.35, 0.6); // flick
+                gap = rand(0.85, 1.15); // time in the air
+                actEnd = t + 8;
                 break;
             case TRIP:
                 v.kick(4);
@@ -717,16 +965,22 @@ final class Fun {
                 actEnd = t + 1.6;
                 break;
             case SCRATCH:
-                actEnd = t + 1.8;
+                actEnd = t + rand(1.3, 2.6);
                 break;
             case YAWN:
                 v.kick(-1.5);
-                actEnd = t + 2.2;
+                actEnd = t + rand(1.8, 2.9);
                 break;
         }
     }
 
     static void end(SquibView v) {
+        if (v.forcePlace != 0) { // back to where this app puts him
+            v.forcePlace = 0;
+            poof(v, center(v), v.posY - 8 * v.S);
+            v.place();
+            poof(v, center(v), v.posY - 8 * v.S);
+        }
         if (act == NAP && v.motion == SquibView.Motion.SLEEP) {
             v.setMotion(SquibView.Motion.IDLE);
         }
@@ -780,6 +1034,7 @@ final class Fun {
                     bvh = bvh < -70 * d ? -bvh * 0.45f : 0;
                 }
                 bx += bvx * f;
+                roll += bvx * f / (ballLook[0] * S / 2);
                 bvx *= (float) Math.pow(bh == 0 ? 0.3 : 0.85, dt);
                 float lo = v.minX + 14 * S, hi = v.maxX + 14 * S;
                 if (bx < lo) {
@@ -1022,16 +1277,16 @@ final class Fun {
                 break;
             }
             case JUGGLE: {
-                int beat = (int) (el * 0.9 * 2 * 3);
+                int beat = (int) (el * 0.9 * 2 * balls);
                 v.armLiftL = beat % 2 == 0 ? 3 : 1;
                 v.armLiftR = 4 - v.armLiftL;
                 v.lookX = 0;
                 v.lookY = -1;
                 if (t > actEnd) {
                     if (variant == 1) {
-                        for (int i = 0; i < 3; i++) {
+                        for (int i = 0; i < balls; i++) {
                             float[] p = juggle(v, i, el, v.lift());
-                            v.spawn(bmp("JUGGLE" + (i + 1))[0], p[0] + S, p[1] + S, (rng.nextFloat() - 0.5f) * 60 * d,
+                            v.spawn(ball(juggleLooks[i], i)[0], p[0], p[1], (rng.nextFloat() - 0.5f) * 60 * d,
                                     -40 * d, 1.1f, 600 * d, 0, 0.8f, S, true);
                         }
                         v.surpriseFor = 0.8;
@@ -1421,7 +1676,7 @@ final class Fun {
                 break;
             }
             case STRETCH: {
-                boolean up = el > 0.15 && el < 1.25;
+                boolean up = el > 0.15 && t < actEnd - 0.35;
                 v.armLiftL = up ? 3 : 0;
                 v.armLiftR = up ? 3 : 0;
                 if (up) {
@@ -1473,7 +1728,7 @@ final class Fun {
             }
             case YAWN: {
                 v.face = SquibView.Face.SLEEPY;
-                v.armLiftL = el < 1.5 ? 2 : 0;
+                v.armLiftL = t < actEnd - 0.7 ? 2 : 0;
                 v.armLiftR = v.armLiftL;
                 if (t > actEnd) {
                     end(v);
@@ -1663,6 +1918,7 @@ final class Fun {
                     }
                 } else if (phase == 1) {
                     bx += side * 190 * d * f;
+                    roll += side * 190 * d * f / (2 * S);
                     v.lookX = side;
                     if ((side > 0 && bx >= ox - 5 * S) || (side < 0 && bx <= ox + 5 * S)) {
                         phase = 2;
@@ -1688,6 +1944,7 @@ final class Fun {
                     }
                 } else {
                     bx += side * 190 * d * f;
+                    roll += side * 190 * d * f / (2 * S);
                     if (variant == 1) {
                         v.armLiftL = 2;
                         v.armLiftR = 2;
@@ -1815,10 +2072,9 @@ final class Fun {
                         phase = 1;
                         mark = t;
                         if (variant == 1) {
-                            String[] cs = {"r", "y", "m", "g"};
                             float x0 = mx(r, 28, 3);
                             for (int i = 0; i < 4; i++) {
-                                String ch = cs[i];
+                                String ch = String.valueOf(Props.light(blockColors[i]));
                                 v.spawn(bmp("BLOCK" + ch, block(ch))[0], sx(v, x0 + 1.5f), sy(v, 18.5f - i * 3, 0),
                                         side * (30 + i * 35) * d, -(30 + i * 20) * d, 1.2f, 500 * d, 0, 1, S, true);
                             }
@@ -1908,7 +2164,19 @@ final class Fun {
                 arm(v, right, 1);
                 v.lookX = v.facing;
                 v.lookY = -1;
-                if (el > 2.2) {
+                if (spinVel == 0 && el > 0.3) { // flick it
+                    spinVel = rand(18, 32);
+                    v.kick(1);
+                }
+                if (t >= reflickAt) { // another flick
+                    reflickAt = 1e18;
+                    spinVel += rand(12, 22);
+                    v.kick(1);
+                    v.happyFor = 0.5;
+                }
+                spinVel *= Math.exp(-0.45 * dt);
+                spinAngle += spinVel * dt * (right ? 1 : -1);
+                if (spinVel > 0 && spinVel < 22) {
                     v.face = SquibView.Face.HAPPY;
                 }
                 if (t > actEnd) {
@@ -1916,8 +2184,142 @@ final class Fun {
                 }
                 break;
             }
+            case CUBE: {
+                boolean r = side > 0;
+                v.lookX = 0;
+                v.lookY = 1;
+                v.armLiftL = 1;
+                v.armLiftR = 1;
+                if (phase == 0) {
+                    if (t >= mark) {
+                        if (cubeMoves.isEmpty()) {
+                            phase = 1;
+                            mark = t;
+                            if (variant <= 2) {
+                                v.happyFor = 2.4;
+                                v.kick(2);
+                                v.heart();
+                                maybeSay(v, "CUBE_DONE", 0.8);
+                            } else if (variant == 3) {
+                                v.annoyedFor = 2.2;
+                                maybeSay(v, "CUBE_GIVEUP", 0.8);
+                            } else {
+                                v.surpriseFor = 1.4;
+                                maybeSay(v, "CUBE_OOPS", 0.8);
+                            }
+                        } else {
+                            lastMove = cubeMoves.remove(0);
+                            cube.turn(lastMove);
+                            lastMoveAt = t;
+                            count++;
+                            double g = gap * rand(0.8, 1.25);
+                            if (variant != 1 && rng.nextDouble() < 0.15) {
+                                g += rand(0.7, 1.4); // stops to think
+                            }
+                            mark = t + g;
+                        }
+                    }
+                    if (t - lastMoveAt < 0.12) {
+                        arm(v, count % 2 == 0, 2);
+                    } else if (mark - t > 0.6 && count > 0) { // thinking
+                        v.lookX = r ? 1 : -1;
+                        v.lookY = -1;
+                    }
+                } else {
+                    double e = t - mark;
+                    if (variant <= 2) { // holds it up, solved
+                        v.armLiftL = 3;
+                        v.armLiftR = 3;
+                        v.face = SquibView.Face.HAPPY;
+                        v.lookY = -1;
+                        if (((int) (e / 0.3)) != count) {
+                            count = (int) (e / 0.3);
+                            puff(v, "SPARK", center(v) + (rng.nextFloat() - 0.5f) * 16 * S, sy(v, armRow(v) - 8, v.lift()), 0, -15 * d, 0.6f, 0, S);
+                        }
+                    } else if (variant == 3) { // shakes it
+                        int beat = (int) (e / 0.09);
+                        v.armLiftL = beat % 2 == 0 ? 2 : 1;
+                        v.armLiftR = 3 - v.armLiftL;
+                        v.face = SquibView.Face.ANNOYED;
+                    } else {
+                        v.face = SquibView.Face.SURPRISED;
+                        v.lookX = 0;
+                    }
+                    if (e > 2.3) {
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case COIN: {
+                if (phase == 0) {
+                    arm(v, right, 1);
+                    v.lookX = v.facing;
+                    if (t >= mark) {
+                        phase = 1;
+                        mark = t;
+                        v.kick(1.2);
+                    }
+                } else if (phase == 1) {
+                    double p = (t - mark) / gap;
+                    arm(v, right, p < 0.15 ? 2 : 1);
+                    v.lookY = p > 0.2 && p < 0.8 ? -1 : 0;
+                    if (p >= 1) {
+                        if (variant == 0) {
+                            phase = 2;
+                            mark = t;
+                            v.kick(0.8);
+                            v.happyFor = 1;
+                            maybeSay(v, heads ? "COIN_HEADS" : "COIN_TAILS", 0.6);
+                        } else {
+                            phase = 3;
+                            mark = t;
+                            ox = sx(v, handPx(v, right) + 0.5f);
+                            oy = sy(v, handPy(v, right) - 3, v.lift());
+                            ovy = 250 * d;
+                            ovx = v.facing * 40 * d;
+                        }
+                    }
+                } else if (phase == 2) {
+                    arm(v, right, 2);
+                    v.lookX = v.facing;
+                    if (t - mark > 1.4) {
+                        end(v);
+                    }
+                } else {
+                    arm(v, right, 0);
+                    v.lookY = 1;
+                    float gx = ox - center(v);
+                    v.lookX = Math.abs(gx) < 6 * d ? 0 : gx > 0 ? 1 : -1;
+                    if (phase == 3) {
+                        ovy += 900 * d * f;
+                        oy += ovy * f;
+                        ox += ovx * f;
+                        if (oy >= v.floorY - 2.5f * S) {
+                            oy = v.floorY - 2.5f * S;
+                            ovy = -ovy * 0.4f;
+                            ovx *= 0.6f;
+                            if (Math.abs(ovy) < 60 * d) {
+                                phase = 4;
+                                mark = t;
+                                v.surpriseFor = 0.8;
+                                maybeSay(v, "COIN_DROP", 0.7);
+                            }
+                        }
+                    } else if (t - mark > 1.4) {
+                        end(v);
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
             case HICCUP: {
-                int hic = el < 0.3 ? 0 : el < 1.1 ? 1 : el < 1.9 ? 2 : 3;
+                int hic = el < 0.3 ? 0 : 1 + (int) ((el - 0.3) / gap);
                 if (hic != count) {
                     count = hic;
                     v.hop();
@@ -1951,7 +2353,7 @@ final class Fun {
                 v.lookY = -1;
                 v.lookX = 0;
                 if (t >= nextEvent) {
-                    nextEvent = t + 0.6;
+                    nextEvent = t + gap;
                     v.note();
                 }
                 if (t > actEnd) {
@@ -1965,7 +2367,7 @@ final class Fun {
     }
 
     static String[] block(String ch) {
-        String dark = ch.equals("y") ? "Y" : ch.toUpperCase();
+        String dark = String.valueOf(Props.dark(ch.charAt(0)));
         return new String[]{ch + ch + ch, ch + dark + ch, ch + ch + dark};
     }
 
@@ -1999,12 +2401,12 @@ final class Fun {
 
     // ---------- positions used by both update and draw ----------
 
-    /** Juggled balls go round in a loop above his head, hand to hand. */
+    /** Juggled balls go round in a loop above his head, hand to hand. Returns the middle of ball i. */
     static float[] juggle(SquibView v, int i, double el, float lift) {
-        double a = el * Math.PI * 2 * 0.9 + i * Math.PI * 2 / 3;
+        double a = el * Math.PI * 2 * 0.9 + i * Math.PI * 2 / balls;
         float gx = 13.5f + (float) Math.cos(a) * 12;
-        float gy = (top(v) - 7) + (float) Math.sin(a) * 5.5f;
-        return new float[]{sx(v, gx - 1.5f), sy(v, gy - 1.5f, lift)};
+        float gy = (top(v) - 7) + (float) Math.sin(a) * (5.5f + (balls - 3) * 0.8f);
+        return new float[]{sx(v, gx), sy(v, gy, lift)};
     }
 
     static float[] rodTip(SquibView v, float lift) {
@@ -2015,18 +2417,13 @@ final class Fun {
     /** Colour for kite, balloon and fishing strings: mid grey shows on light and dark apps. */
     static final int STRING = 0xFF9A9A9A;
 
-    static final String[] BALLOON_COLORS = {"r", "m", "g", "u", "y"};
-
     static String balloonKey() {
         return "BALLOON" + variant;
     }
 
     static String[] balloonRows() {
-        String c = BALLOON_COLORS[variant % BALLOON_COLORS.length];
-        String dark = c.toUpperCase();
-        if (c.equals("y")) {
-            dark = "Y";
-        }
+        String c = String.valueOf(Props.light(variant % Props.BRIGHT));
+        String dark = String.valueOf(Props.dark(c.charAt(0)));
         String[] r = Art.BALLOON.clone();
         for (int i = 0; i < r.length; i++) {
             r[i] = r[i].replace("R", "#").replace("r", c).replace("#", dark);
@@ -2313,7 +2710,8 @@ final class Fun {
         }
         switch (act) {
             case BALL:
-                drawBmp(c, bmp("BALL")[0], bx - 2.5f * S, (v.floorY - bh) - 5 * S, S, (int) alpha);
+                drawBmp(c, ball(ballLook, Math.round(roll / (float) (Math.PI / 4)))[0], bx - ballLook[0] / 2f * S,
+                        (v.floorY - bh) - ballLook[0] * S, S, (int) alpha);
                 break;
             case PLANE:
                 if (!objOn) {
@@ -2335,7 +2733,7 @@ final class Fun {
                 float y = sy(v, handPy(v, right) + 1, lift);
                 float len = (float) (Math.abs(Math.sin(el * 2.2)) * Math.min(Math.max(0, v.floorY - y - 3 * S), 30 * v.d));
                 line(c, x, y, x, y + len, thin(v), 0xFF1D1D1D);
-                drawBmp(c, bmp("YOYO")[0], x - 1.5f * S, y + len - 1.5f * S, S, 255);
+                drawBmp(c, tint("YOYO", "uU", pair(yoyoColor))[0], x - 1.5f * S, y + len - 1.5f * S, S, 255);
                 break;
             }
             case BUTTERFLY:
@@ -2351,9 +2749,10 @@ final class Fun {
                 put(v, c, "GUITAR", right ? 0 : 1, mx(right, 9, 12), armRow(v) + 1, lift, 255);
                 break;
             case JUGGLE:
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < balls && i < juggleLooks.length; i++) {
                     float[] p = juggle(v, i, el, lift);
-                    drawBmp(c, bmp("JUGGLE" + (i + 1))[0], p[0], p[1], S, 255);
+                    int[] look = juggleLooks[i];
+                    drawBmp(c, ball(look, (int) (el * 8) + i)[0], p[0] - look[0] / 2f * S, p[1] - look[0] / 2f * S, S, 255);
                 }
                 break;
             case KITE: {
@@ -2579,7 +2978,7 @@ final class Fun {
                     double a = i * Math.PI * 2 / 48;
                     float gx = cx + (float) Math.cos(a) * 11, gy = cy + (float) Math.sin(a) * 1.6f;
                     if (Math.sin(a) >= 0 || gx < bl - 0.5f || gx > br + 0.5f) {
-                        gline(v, c, gx, gy, gx, gy, (i / 4) % 2 == 0 ? 'u' : 'y', lift);
+                        gline(v, c, gx, gy, gx, gy, Props.light((i / 4) % 2 == 0 ? hulaColors[0] : hulaColors[1]), lift);
                     }
                 }
                 break;
@@ -2619,10 +3018,9 @@ final class Fun {
                     }
                 }
                 if (phase == 0) {
-                    held(v, c, lift, "BOWL", side > 0, false, false);
+                    held(v, c, lift, Props.ballRows(ballLook, 0), ball(ballLook, 0), new int[]{0, 0}, side > 0, false, false);
                 } else if (bx > -10 * S && bx < v.screenW + 10 * S) {
-                    int[] spin = {0, 2, 1, 3};
-                    drawBmp(c, bmp("BOWL")[spin[((int) (v.t / 0.08)) % 4]], bx - 2 * S, v.posY - 4 * S, S, 255);
+                    drawBmp(c, ball(ballLook, Math.round(roll / (float) (Math.PI / 4)))[0], bx - 2 * S, v.posY - 4 * S, S, 255);
                 }
                 break;
             }
@@ -2652,11 +3050,11 @@ final class Fun {
             case BLOCKS: {
                 boolean r = side > 0;
                 if (phase == 0 || variant == 0) {
-                    String[] cs = {"r", "y", "m", "g"};
                     float x0 = mx(r, 28, 3);
                     float wob = phase == 0 && count >= 4 ? (float) Math.sin(v.t * 12) * (float) Math.min(1, (v.t - mark) / 1.6) : 0;
                     for (int i = 0; i < count; i++) {
-                        drawBmp(c, bmp("BLOCK" + cs[i], block(cs[i]))[0], sx(v, x0 + Math.round(wob * i * 0.5f)), sy(v, 17 - i * 3, 0), S, 255);
+                        String ch = String.valueOf(Props.light(blockColors[i]));
+                        drawBmp(c, bmp("BLOCK" + ch, block(ch))[0], sx(v, x0 + Math.round(wob * i * 0.5f)), sy(v, 17 - i * 3, 0), S, 255);
                     }
                 }
                 break;
@@ -2670,8 +3068,76 @@ final class Fun {
                 break;
             }
             case SPINNER: {
-                String name = ((int) (v.t / 0.05)) % 2 == 0 ? "SPINNER1" : "SPINNER2";
-                put(v, c, name, 0, handPx(v, right) - 2, handPy(v, right) - 5, lift, 255);
+                int hx = handPx(v, right), hy = handPy(v, right) - 3;
+                char body = Props.light(spinBody), weight = Props.light(spinWeight);
+                double reach = Props.spinnerReach(spinType);
+                int blur = (int) clamp((float) (spinVel - 10) * 8, 0, 150); // fast: a see-through disc
+                int R = (int) Math.ceil(reach);
+                for (int dy = -R; dy <= R; dy++) {
+                    for (int dx = -R; dx <= R; dx++) {
+                        double dist = Math.hypot(dx, dy);
+                        char ch = Props.spinnerPixel(spinType, body, weight, spinAngle, dx, dy);
+                        if (ch != 0) {
+                            dot(v, c, hx + dx, hy + dy, Art.color(ch), 255 - blur, lift);
+                        }
+                        if (blur > 0 && dist > 1.2 && dist < reach) {
+                            dot(v, c, hx + dx, hy + dy, Art.color(dist > reach - 1.3 ? weight : body), blur * 2 / 3, lift);
+                        }
+                    }
+                }
+                break;
+            }
+            case CUBE: {
+                if (cube == null) {
+                    break;
+                }
+                int[] shift = null;
+                if (lastMove != null && v.t - lastMoveAt < 0.09) {
+                    shift = lastMove;
+                }
+                String[] rows = cube.rows(shift);
+                StringBuilder key = new StringBuilder();
+                for (String row : rows) {
+                    key.append(row);
+                }
+                if (!key.toString().equals(cubeKey)) {
+                    cubeKey = key.toString();
+                    cubeBmp = bmp("CUBE_TMP", rows)[0];
+                    cache.remove("CUBE_TMP");
+                }
+                int w = rows[0].length();
+                boolean up = phase == 1 && variant <= 2;
+                float gy = up ? top(v) - 10 : armRow(v) + 1;
+                float wob = phase == 1 && variant == 3 ? (((int) ((v.t - mark) / 0.09)) % 2 == 0 ? -1 : 1) : 0;
+                drawBmp(c, cubeBmp, sx(v, 14 - w / 2 + wob), sy(v, gy, lift), S, 255);
+                break;
+            }
+            case COIN: {
+                float hx = sx(v, handPx(v, right) + 0.5f);
+                float hy = sy(v, handPy(v, right) - 3, lift);
+                int w = 5;
+                boolean face = heads;
+                float x = hx, y = hy;
+                if (phase == 0) {
+                    w = 3;
+                } else if (phase == 1 || phase == 3) {
+                    double spin = (v.t - mark) * 24;
+                    double cs = Math.cos(spin);
+                    w = Math.max(1, (int) Math.round(Math.abs(cs) * 5));
+                    face = cs > 0;
+                    if (phase == 1) {
+                        double p = Math.min(1, (v.t - mark) / gap);
+                        y = hy - (float) (4 * 18 * p * (1 - p)) * S;
+                    } else {
+                        x = ox;
+                        y = oy;
+                    }
+                } else if (phase == 4) {
+                    x = ox;
+                    y = oy;
+                }
+                String key = "COIN" + metal + "_" + w + (face ? "h" : "t");
+                drawBmp(c, bmp(key, Props.coinRows(metal, w, face))[0], x - w / 2f * S, y - 2.5f * S, S, 255);
                 break;
             }
         }

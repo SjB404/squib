@@ -10,6 +10,7 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
   - `SquibView.java`: drawing, movement, faces, touch, speech bubbles, chatter timing. Originally recovered from a decompiled build, so many local variables have generic names (`d2`, `f3`).
   - `Fun.java`: activities (kite, fishing, magic...), quick fidgets, Minecraft gear, seasonal hats, scroll check-ins. Activity ids, names, where they can happen and how likely they are are tables at the top.
   - `Art.java`: all prop pixel art as rows of characters, and the colour for each character.
+  - `Props.java`: props drawn by code so one animation covers many versions: balls (size, 7 patterns, colours, turned for rolling), fidget spinners, coins, and the puzzle cube (keeps every sticker, so solves are real). Colour pairs (`PAIRS`) used to recolour toys.
   - `Lines.java`: GENERATED from `squib.json` by `tools/gen_lines.py`. Don't edit by hand.
   - `Pick.java`: picks lines without repeats (shuffled deck per group, remembers recent lines across restarts).
   - `Remote.java`: downloads and applies `squib.json`.
@@ -38,3 +39,7 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - For a release: bump `versionCode` and `versionName` in `app/build.gradle`, rebuild, replace `apk/Squib.apk`, update the version and any changed behaviour in `README.md`.
 - Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`. `SIM_OPTS="-Dreal=1" tools/sim/run.sh stress 12` runs with the real timings and reports the most activities in any hour and fidgets in any 10 minutes (limits: 2 and 1).
 - Activities are limited to 2 an hour and fidgets to 1 per 10 minutes (the user asked for this). Keep new activities within those limits.
+- Every change the user asks for also adds at least one new activity or fidget (the user asked for this).
+- Versions should be procedural: a new colour, pattern or shape is data fed to one animation (see `Props.java`, `Fun.tint`, `Fun.ball`), not a new hand-drawn animation.
+- A new activity or fidget needs: its id, an entry in `NAMES`, `WHERE` and `WEIGHT` (fidgets go after `LAST_ACTIVITY`), a case in `start`, `update` and `draw`, and if it has versions, a list in `Fun.variantNames` and `choose` / `chooseW` in `start` so the picker in settings can ask for one. `Fun.label` gives the picker name if the id doesn't read well.
+- `tools/sim/run.sh picks` starts every activity and every version through the picker, from the floor and from a cloud, and fails if one doesn't start, end or go back to its spot. `SIM_OPTS="-Dwant=N" tools/sim/run.sh sheets NAME` renders version N.

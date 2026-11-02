@@ -134,7 +134,12 @@ public final class SquibService extends Service {
             this.stage.talk();
         } else if (ACTION_TRICK.equals(action)) {
             this.stage.userHidden = false;
-            this.stage.trick();
+            String act = intent.getStringExtra("act");
+            if (act != null) {
+                this.stage.trick(act, intent.getIntExtra("variant", -1));
+            } else {
+                this.stage.trick();
+            }
         } else if (ACTION_REFRESH.equals(action)) {
             this.stage.reloadPrefs();
             measureScreen();

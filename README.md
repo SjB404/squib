@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.8). It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.9). It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -21,7 +21,7 @@ Two ways, same result:
 
 Both sign with `signing/squib-debug.keystore`, the key every Squib build has used, so a new build installs over the one on your phone without losing his stats. It's a public debug key: fine for sideloading, not for the Play Store.
 
-`tools/sim/run.sh` runs squib on a computer with no phone: `sheets` draws a picture of every activity into `build/sim/`, and `stress 8` simulates 8 hours of random use and fails on any crash.
+`tools/sim/run.sh` runs squib on a computer with no phone: `sheets` draws a picture of every activity into `build/sim/`, `stress 8` simulates 8 hours of random use and fails on any crash, and `picks` runs every activity and version the picker offers.
 
 ## squib.json
 
@@ -47,7 +47,7 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 
 ### lines
 
-There are 1289 lines in 112 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1322 lines in 120 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -79,7 +79,7 @@ There are 1289 lines in 112 groups. Each group **replaces** the built-in lines f
 | ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
 | one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
 | one group per fidget (STRETCH, SPINNER, HICCUP, ...) | sometimes, when he does that fidget |
-| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ | moments during activities. MAIL_READ is what the letter says |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP | moments during activities. MAIL_READ is what the letter says |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
@@ -210,26 +210,30 @@ Apps added in the `apps` section of `squib.json` go on top of these lists.
 
 Every 30 to 60 minutes (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do, so at most 2 an hour. The wait carries over if he's restarted, so restarting him doesn't bring the next one sooner. He won't pick any of his last 3 activities. About half the time he says a line from that activity's group when he starts. The **trick** button in his settings makes him do one right away.
 
+**Picking one:** **pick a trick** and **pick a fidget** in his settings list everything he can do. Ones marked `...` have versions: pick one, or "random". If it needs a different spot (fishing needs a cloud, skating needs the floor), he pops over there for it and pops back after.
+
+**Versions:** balls, spinners, coins and the puzzle cube are drawn by code, not stored as fixed pictures, so one animation covers every version. A ball can be any size from 4 to 7 pixels, in 7 patterns (plain, striped, two-tone, spotty, beach, checkered, banded) and any two colours, and the pattern turns as it rolls. Most activities and fidgets also run for a random length of time.
+
 | activity | what happens | where |
 |---|---|---|
-| BALL | a ball drops in, he chases it and kicks it around 3 to 6 times | bottom of the screen only |
+| BALL | a ball drops in, he chases it and kicks it around 3 to 6 times. Random size, pattern and colours | bottom of the screen only |
 | PLANE | winds up and throws a paper plane that glides off screen. His eyes follow it | anywhere |
 | BUBBLES | blows bubbles with a wand. They float up and fade | anywhere |
 | BOOK | holds up a book and reads, turning pages now and then | anywhere, more often in reading apps |
-| YOYO | plays with a yo-yo | anywhere |
+| YOYO | plays with a yo-yo (random colour) | anywhere |
 | DANCE | dances: arms swapping, hopping on the beat, music notes | anywhere, much more often in music apps |
 | WAVE | waves at you | anywhere |
 | BUTTERFLY | a butterfly flies in and circles his head. He hops trying to catch it, then it flies away | anywhere |
 | NAP | takes a 20 to 45 second nap. Tap him to wake him | anywhere, more often at night |
 | TEA | drinks a mug of tea. Steam rises, and he takes sips | anywhere, more often in reading apps |
 | GUITAR | strums a little guitar, music notes float up | anywhere, much more often in music apps |
-| JUGGLE | juggles three balls in a loop over his head. Sometimes drops them all at the end | anywhere |
+| JUGGLE | juggles 3, 4 or 5 balls in a loop over his head, each with its own pattern and colour (sometimes a matching set). Sometimes drops them all at the end | anywhere |
 | KITE | flies a kite high above him on a long string, with a bow tail | bottom of the screen only |
 | FISHING | casts a line down from his cloud and waits. Gets a bite, reels in a shrimp (eats it), a fish (throws it back) or an old boot (annoyed) | only when sitting on a cloud |
 | RAIN | a rain cloud appears over him. He gets grumpy, opens an umbrella, and when the rain stops there's a rainbow | anywhere |
 | SKATE | rides a skateboard back and forth across the screen with a kickflip after each run | bottom of the screen only |
 | ICECREAM | eats a strawberry ice cream in three licks. It drips | anywhere |
-| BALLOON | holds a balloon (random colour) and bounces. At the end it pops, or he lets go and it floats away | anywhere |
+| BALLOON | holds a balloon (one of 9 colours) and bounces. At the end it pops, or he lets go and it floats away | anywhere |
 | MAGIC | puts a top hat on the floor, taps it with a wand, and pulls out a shrimp, a dove, a tiny squid or flowers. Then the hat vanishes | anywhere |
 | STARGAZE | looks through a telescope while shooting stars go by | bottom of the screen, 9pm to 5am only |
 | SNEEZE | "ah... ah..." then sneezes ink and shoots backwards | anywhere |
@@ -240,22 +244,26 @@ Every 30 to 60 minutes (`activityGapMin` / `activityGapMax`), when he's standing
 | GUM | blows a bubblegum bubble that grows over his face and pops all over him | anywhere |
 | CAMPFIRE | roasts a marshmallow over a little campfire. Sometimes it catches fire and he blows it out. Then he eats it | bottom of the screen only |
 | DRUMS | plays a drum with two sticks, music notes | anywhere, much more often in music apps |
-| HULA | hula hoop round his middle | anywhere |
+| HULA | hula hoop round his middle, in two random colours | anywhere |
 | BOOMERANG | throws a boomerang that loops out and comes back. He catches it, or it bonks him on the head | anywhere |
 | GARDEN | plants a seed and waters it until a flower grows. The flower stays on the floor for 10 minutes (up to 3) | bottom of the screen only |
-| BOWLING | rolls a ball at three pins. Strike, or a miss that leaves some standing | bottom of the screen only |
+| BOWLING | rolls a ball (random pattern and colours) at three pins. Strike, or a miss that leaves some standing | bottom of the screen only |
 | KARATE | karate-chops a plank on two bricks in half | bottom of the screen only |
 | WORKOUT | lifts a dumbbell, 4 reps each arm, with sweat | anywhere |
 | FRIEND | a little teal squid walks in, they say hi and hop, then it walks off | bottom of the screen only |
-| BLOCKS | stacks four toy blocks into a wobbly tower. Sometimes it falls over | anywhere |
+| BLOCKS | stacks four toy blocks (random colours) into a wobbly tower. Sometimes it falls over | anywhere |
 | MAIL | a letter floats down, he catches it and reads it out (MAIL_READ) | anywhere |
 | MEDITATE | sits with his eyes closed and floats up a little | anywhere |
+| CUBE | twists a puzzle cube. The cube keeps track of every sticker, so a solve is real: it gets scrambled, then he undoes the twists. Versions: solves it (holds it up), speed solve, a 2x2 cube, gives up (shakes it), or messes up a solved one | anywhere |
 
 He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing.
 
 ### Fidgets
 
-Between activities, every 10 to 20 minutes (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER (a fidget spinner), HICCUP, SHAKE (shakes himself off like a wet dog) or WHISTLE. He only says something about 1 time in 8.
+Between activities, every 10 to 20 minutes (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE or COIN. He only says something about 1 time in 8.
+
+- **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down. Sometimes he flicks it again.
+- **COIN:** flips a gold, silver or copper coin. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor.
 
 ## Minecraft
 

@@ -118,6 +118,8 @@ public class Sim {
         String mode = a.length > 0 ? a[0] : "sheets";
         if (mode.equals("sheets")) {
             sheets(a.length > 1 ? a[1] : null);
+        } else if (mode.equals("picks")) {
+            picks();
         } else {
             stress(Double.parseDouble(a[1]));
         }
@@ -142,7 +144,9 @@ public class Sim {
                 Fun.hat = "PARTY_HAT";
             }
             v.speech = null;
+            Fun.want = Integer.getInteger("want", -1);
             Fun.start(v, act);
+            Fun.want = -1;
             double dur = Math.max(1.5, Math.min(20, Fun.actEnd - v.t + 0.5));
             if (act == Fun.BALL || act == Fun.FISHING || act == Fun.SKATE || act == Fun.ICECREAM) {
                 dur = 16;
@@ -196,6 +200,40 @@ public class Sim {
             }
             sheet("HATS", small, labels);
         }
+    }
+
+    /** Every activity and fidget, every version, picked from the floor and from a cloud, the way the picker in settings does it. */
+    static void picks() {
+        int n = 0;
+        for (String app : new String[]{"com.android.launcher", "com.whatsapp"}) {
+            for (int act = 1; act < Fun.NAMES.length; act++) {
+                String[] vs = Fun.variantNames(act);
+                for (int var = -1; var < (vs == null ? 0 : vs.length); var++) {
+                    SquibView v = fresh();
+                    v.setApp(app);
+                    run(v, 1);
+                    boolean perched = v.perched;
+                    Fun.trick(v, Fun.NAMES[act], var);
+                    if (Fun.act != act) {
+                        throw new IllegalStateException(Fun.NAMES[act] + " " + var + " didn't start in " + app);
+                    }
+                    double start = v.t;
+                    while (Fun.act == act && v.t - start < 90) {
+                        run(v, 0.5);
+                        v.onDraw(canvas);
+                    }
+                    if (Fun.act == act) {
+                        throw new IllegalStateException(Fun.NAMES[act] + " " + var + " never ended");
+                    }
+                    run(v, 0.5);
+                    if (v.forcePlace != 0 || v.perched != perched) {
+                        throw new IllegalStateException(Fun.NAMES[act] + " " + var + " didn't go back to its spot");
+                    }
+                    n++;
+                }
+            }
+        }
+        System.out.println("picked " + n + " tricks and versions, all started, ended and went back to their spot");
     }
 
     static int mostIn(List<Double> ts, double window) {

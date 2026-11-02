@@ -11,6 +11,6 @@ S=app/src/main/java/com/squib/buddy
 OUT=build/sim
 rm -rf "$OUT/classes" && mkdir -p "$OUT/classes"
 javac -nowarn -encoding UTF-8 -d "$OUT/classes" $(find tools/sim/fake -name "*.java") \
-  $S/SquibView.java $S/Fun.java $S/Art.java $S/Lines.java $S/Pick.java $S/Apps.java $S/PixelFont.java $S/Prefs.java \
+  $S/SquibView.java $S/Fun.java $S/Art.java $S/Lines.java $S/Pick.java $S/Apps.java $S/PixelFont.java $S/Prefs.java $S/Props.java \
   tools/sim/Sim.java 2>&1 | grep -v "^Note" || true
 java -Dout="$OUT" ${SIM_OPTS:-} -cp "$OUT/classes" com.squib.buddy.Sim "$@"

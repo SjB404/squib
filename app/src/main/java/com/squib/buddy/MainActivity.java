@@ -1,6 +1,8 @@
 package com.squib.buddy;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +21,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
+import java.util.ArrayList;
 
 /** Settings screen: permissions, start/stop, toggles, and a little preview of squib. */
 public final class MainActivity extends Activity {
@@ -115,6 +119,20 @@ public final class MainActivity extends Activity {
         hideButton = sendButton("hide", SquibService.ACTION_HIDE);
         actions.addView(hideButton, weight());
         root.addView(actions);
+        LinearLayout picks = new LinearLayout(this);
+        picks.addView(button("pick a trick", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pick(false);
+            }
+        }), weight());
+        picks.addView(button("pick a fidget", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pick(true);
+            }
+        }), weight());
+        root.addView(picks);
 
         heading(root, "settings");
         sizeButton = button("", new View.OnClickListener() {
@@ -160,7 +178,7 @@ public final class MainActivity extends Activity {
         Remote.addRow(this, root);
 
         heading(root, "how to play");
-        root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. his notification has hide, feed and pause. when he's paused, it has start and stop.", 14, CREAM, false));
+        root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. \"pick a trick\" / \"pick a fidget\" let you choose which one, and which version. his notification has hide, feed and pause. when he's paused, it has start and stop.", 14, CREAM, false));
         heading(root, "app modes");
         root.addView(label(Apps.SUMMARY, 13, CREAM, false));
 
@@ -234,6 +252,50 @@ public final class MainActivity extends Activity {
         if (SquibService.running) {
             startService(new Intent(this, SquibService.class).setAction(action));
         }
+    }
+
+    /** Lists every activity (or fidget), then its versions if it has any, and makes him do it. */
+    void pick(boolean fidgets) {
+        final ArrayList<Integer> ids = new ArrayList<Integer>();
+        ArrayList<String> names = new ArrayList<String>();
+        int from = fidgets ? Fun.FIRST_FIDGET : 1, to = fidgets ? Fun.NAMES.length - 1 : Fun.LAST_ACTIVITY;
+        for (int a = from; a <= to; a++) {
+            ids.add(a);
+            names.add(Fun.label(a) + (Fun.variantNames(a) != null ? "  ..." : ""));
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(fidgets ? "pick a fidget" : "pick a trick")
+                .setItems(names.toArray(new String[0]), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        final int a = ids.get(which);
+                        String[] versions = Fun.variantNames(a);
+                        if (versions == null) {
+                            doTrick(a, -1);
+                            return;
+                        }
+                        String[] items = new String[versions.length + 1];
+                        items[0] = "random";
+                        System.arraycopy(versions, 0, items, 1, versions.length);
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle(Fun.label(a))
+                                .setItems(items, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface d2, int w) {
+                                        doTrick(a, w - 1);
+                                    }
+                                }).show();
+                    }
+                }).show();
+    }
+
+    void doTrick(int a, int variant) {
+        if (!SquibService.running) {
+            Toast.makeText(this, "start squib first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        startService(new Intent(this, SquibService.class).setAction(SquibService.ACTION_TRICK)
+                .putExtra("act", Fun.NAMES[a]).putExtra("variant", variant));
     }
 
     Button sendButton(String text, final String action) {
