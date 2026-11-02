@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- the pause timer: an exact alarm is allowed to start squib again from the background -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <queries>
         <intent>
@@ -41,6 +44,9 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="A desktop-pet style companion shown over other apps" />
         </service>
+        <receiver
+            android:name="com.squib.buddy.Pause"
+            android:exported="false" />
         <receiver
             android:name="com.squib.buddy.BootReceiver"
             android:exported="true">

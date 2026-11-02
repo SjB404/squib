@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.7). It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.8). It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -93,6 +93,15 @@ Apps where he gets his Minecraft gear. Anything listed here also counts as a gam
 ### apps
 
 Adds apps to a type. These get added on top of the built-in list. Types: `WATCH`, `MUSIC`, `SCROLL`, `CHAT`, `GAME`, `NAV`, `READ`, `HIDE`. To find an app's name, open its Play Store page: it's the part after `id=` in the link.
+
+## Pausing
+
+His notification has **hide**, **feed** and **pause**. Some apps refuse taps while anything is drawn over them, even with click-through on. **pause** stops him completely (nothing left on screen) and leaves a "squib is paused" notification with **start** and **stop**.
+
+- **come back after a pause** (on by default): he starts again by himself after **pause for** minutes (5 by default, 1 minute to 3 hours, both in his settings). The notification says what time.
+- Off: he waits until you press **start** in that notification, or start him from the app.
+- **stop** in the paused notification cancels the pause and removes the notification, so he stays off.
+- If Android won't let him start in the background, the notification changes to say so, and **start** still works.
 
 ## Modes
 

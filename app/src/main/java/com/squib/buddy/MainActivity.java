@@ -31,7 +31,7 @@ public final class MainActivity extends Activity {
     float d;
     SharedPreferences prefs;
     Button hideButton, notifyButton, overlayButton, sizeButton, startStop, textButton, usageButton;
-    TextView notifyStatus, overlayStatus, stats, usageStatus;
+    TextView notifyStatus, overlayStatus, pauseLength, stats, usageStatus;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -138,11 +138,29 @@ public final class MainActivity extends Activity {
         toggle(root, "break reminders", "after 50 minutes on your phone, and long scrolls", "reminders", true);
         toggle(root, "app modes", "reacts to the app you're in (needs usage access)", "appModes", true);
         toggle(root, "start with phone", "comes back when your phone restarts", "boot", true);
+        toggle(root, "come back after a pause", "\"pause\" in his notification stops him completely, for apps that won't work with him on screen. on: he comes back after the time below. off: he waits until you press start", "pauseAuto", true);
+        pauseLength = label("", 14, CREAM, false);
+        LinearLayout pauseRow = new LinearLayout(this);
+        pauseRow.setGravity(16);
+        pauseRow.addView(pauseLength, new LinearLayout.LayoutParams(0, -2, 1));
+        pauseRow.addView(button("-", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stepPause(-1);
+            }
+        }));
+        pauseRow.addView(button("+", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stepPause(1);
+            }
+        }));
+        root.addView(pauseRow);
         toggle(root, "click-through", "taps go straight through him. you can't boop, pet or drag him while this is on", "clickThrough", false);
         Remote.addRow(this, root);
 
         heading(root, "how to play");
-        root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. his notification has hide, feed and stop.", 14, CREAM, false));
+        root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. his notification has hide, feed and pause. when he's paused, it has start and stop.", 14, CREAM, false));
         heading(root, "app modes");
         root.addView(label(Apps.SUMMARY, 13, CREAM, false));
 
@@ -174,7 +192,14 @@ public final class MainActivity extends Activity {
         usageButton.setVisibility(usage ? View.GONE : View.VISIBLE);
         notifyStatus.setText(mark(notify) + "notifications, where his controls live");
         notifyButton.setVisibility(notify ? View.GONE : View.VISIBLE);
-        startStop.setText(SquibService.running ? "send squib to bed" : overlay ? "start squib" : "allow squib to appear first");
+        String start = "start squib";
+        if (Pause.paused(this)) {
+            long until = Pause.until(this);
+            start = until > System.currentTimeMillis() ? "start squib (paused till " + Pause.clock(this, until) + ")" : "start squib (paused)";
+        }
+        startStop.setText(SquibService.running ? "send squib to bed" : overlay ? start : "allow squib to appear first");
+        int mins = Pause.minutes(this);
+        pauseLength.setText("pause for: " + (mins < 60 || mins % 60 != 0 ? mins + " min" : (mins / 60) + (mins == 60 ? " hour" : " hours")));
         hideButton.setEnabled(SquibService.running);
         sizeButton.setText("size: " + SIZE_NAMES[prefs.getInt("size", 2) - 2] + "   (tap to change)");
         textButton.setText("text size: " + SIZE_NAMES[prefs.getInt("textSize", 1)] + "   (tap to change)");
@@ -182,6 +207,18 @@ public final class MainActivity extends Activity {
         stats.setText("day " + ((today - prefs.getLong("born", today)) + 1) + "  ·  " + prefs.getInt("fed", 0) + " shrimp eaten  ·  "
                 + prefs.getInt("boops", 0) + " boops  ·  " + prefs.getInt("pets", 0) + " pets");
         Remote.refreshRow(this);
+    }
+
+    /** Moves the pause length one step along Pause.MINUTES. */
+    void stepPause(int dir) {
+        int mins = Pause.minutes(this);
+        int i = 0;
+        while (i < Pause.MINUTES.length - 1 && Pause.MINUTES[i] < mins) {
+            i++;
+        }
+        i = Math.max(0, Math.min(Pause.MINUTES.length - 1, i + dir));
+        prefs.edit().putInt("pauseMinutes", Pause.MINUTES[i]).apply();
+        refresh();
     }
 
     static String mark(boolean ok) {

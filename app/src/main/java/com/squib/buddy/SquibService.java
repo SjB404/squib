@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -31,6 +32,7 @@ import android.view.WindowManager;
 public final class SquibService extends Service {
     static final String ACTION_FEED = "com.squib.buddy.FEED";
     static final String ACTION_HIDE = "com.squib.buddy.HIDE";
+    static final String ACTION_PAUSE = "com.squib.buddy.PAUSE";
     static final String ACTION_REFRESH = "com.squib.buddy.REFRESH";
     static final String ACTION_STOP = "com.squib.buddy.STOP";
     static final String ACTION_TALK = "com.squib.buddy.TALK";
@@ -82,9 +84,10 @@ public final class SquibService extends Service {
         super.onCreate();
         running = true;
         NotificationChannel notificationChannel = new NotificationChannel(CHANNEL, CHANNEL, 2);
-        notificationChannel.setDescription("squib's controls: hide, feed, stop");
+        notificationChannel.setDescription("squib's controls: hide, feed, pause");
         ((NotificationManager) getSystemService(NotificationManager.class)).createNotificationChannel(notificationChannel);
         startInForeground();
+        Pause.clear(this);
         if (!Settings.canDrawOverlays(this)) {
             stopSelf();
             return;
@@ -95,6 +98,12 @@ public final class SquibService extends Service {
         Remote.start(this);
         registerScreenReceiver();
         pollForegroundApp();
+        // Started with the screen off (by the pause alarm or at boot): wait for the screen to come on.
+        if (!((PowerManager) getSystemService(PowerManager.class)).isInteractive()) {
+            this.screenOn = false;
+            this.screenOffAt = SystemClock.elapsedRealtime();
+            return;
+        }
         this.handler.post(this.frame);
     }
 
@@ -106,6 +115,11 @@ public final class SquibService extends Service {
         }
         String action = intent != null ? intent.getAction() : null;
         if (ACTION_STOP.equals(action)) {
+            stopSelf();
+            return 2;
+        }
+        if (ACTION_PAUSE.equals(action)) {
+            Pause.begin(this);
             stopSelf();
             return 2;
         }
@@ -170,7 +184,7 @@ public final class SquibService extends Service {
     Notification buildNotification() {
         SquibView squibView = this.stage;
         boolean z = squibView != null && squibView.userHidden;
-        return new Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_notif).setContentTitle(z ? "squib is hiding" : "squib is hanging out").setContentText("tap for settings").setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, (Class<?>) MainActivity.class), 201326592)).setOngoing(true).setShowWhen(false).addAction(action(z ? "show" : "hide", ACTION_HIDE, 1)).addAction(action("feed", ACTION_FEED, 2)).addAction(action("stop", ACTION_STOP, 3)).build();
+        return new Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_notif).setContentTitle(z ? "squib is hiding" : "squib is hanging out").setContentText("tap for settings").setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, (Class<?>) MainActivity.class), 201326592)).setOngoing(true).setShowWhen(false).addAction(action(z ? "show" : "hide", ACTION_HIDE, 1)).addAction(action("feed", ACTION_FEED, 2)).addAction(action("pause", ACTION_PAUSE, 3)).build();
     }
 
     Notification.Action action(String str, String str2, int i) {
