@@ -218,7 +218,7 @@ public class Sim {
                         throw new IllegalStateException(Fun.NAMES[act] + " " + var + " didn't start in " + app);
                     }
                     double start = v.t;
-                    while (Fun.act == act && v.t - start < 90) {
+                    while (Fun.act == act && v.t - start < 1500) {
                         run(v, 0.5);
                         v.onDraw(canvas);
                     }

@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.9). It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.10). It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -40,14 +40,14 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 | setting | default | what it does |
 |---|---|---|
 | `scrollCheckMinutes` | 15 | minutes between scroll check-ins |
-| `activityGapMin` / `activityGapMax` | 1800 / 3600 | seconds between his activities (a random time in between). 30 to 60 minutes, so at most 2 an hour |
-| `fidgetGapMin` / `fidgetGapMax` | 600 / 1200 | seconds between quick fidgets. 10 to 20 minutes, so at most 1 every 10 minutes |
+| `activityGapMin` / `activityGapMax` | 3600 / 7200 | seconds between his activities (a random time in between). 1 to 2 hours, so at most 1 an hour |
+| `fidgetGapMin` / `fidgetGapMax` | 90 / 300 | seconds between fidgets, counted from when the last one ends. 1.5 to 5 minutes, so he fidgets a lot |
 | `bedtimeStart` / `bedtimeEnd` | 0 / 5 | hours when he sleeps (24-hour clock). Can wrap past midnight, e.g. 23 / 6 |
 | `snowEvery` | 0.9 | seconds between snowflakes in December. `0` turns snow off |
 
 ### lines
 
-There are 1322 lines in 120 groups. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1217 lines in 122 groups. His tone is dry and sarcastic, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -79,7 +79,7 @@ There are 1322 lines in 120 groups. Each group **replaces** the built-in lines f
 | ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
 | one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
 | one group per fidget (STRETCH, SPINNER, HICCUP, ...) | sometimes, when he does that fidget |
-| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP | moments during activities. MAIL_READ is what the letter says |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP | moments during activities. MAIL_READ is what the letter says |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
@@ -208,11 +208,13 @@ Apps added in the `apps` section of `squib.json` go on top of these lists.
 
 ## Activities
 
-Every 30 to 60 minutes (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do, so at most 2 an hour. The wait carries over if he's restarted, so restarting him doesn't bring the next one sooner. He won't pick any of his last 3 activities. About half the time he says a line from that activity's group when he starts. The **trick** button in his settings makes him do one right away.
+Every 1 to 2 hours (`activityGapMin` / `activityGapMax`), when he's standing around, he picks something to do, so at most 1 an hour. The wait carries over if he's restarted, so restarting him doesn't bring the next one sooner. He won't pick any of his last 3 activities. About half the time he says a line from that activity's group when he starts. The **trick** button in his settings makes him do one right away.
 
 **Picking one:** **pick a trick** and **pick a fidget** in his settings list everything he can do. Ones marked `...` have versions: pick one, or "random". If it needs a different spot (fishing needs a cloud, skating needs the floor), he pops over there for it and pops back after.
 
-**Versions:** balls, spinners, coins and the puzzle cube are drawn by code, not stored as fixed pictures, so one animation covers every version. A ball can be any size from 4 to 7 pixels, in 7 patterns (plain, striped, two-tone, spotty, beach, checkered, banded) and any two colours, and the pattern turns as it rolls. Most activities and fidgets also run for a random length of time.
+**Versions:** balls, spinners, coins and the puzzle cube are drawn by code, not stored as fixed pictures, so one animation covers every version. A ball can be any size from 4 to 7 pixels, in 7 patterns (plain, striped, two-tone, spotty, beach, checkered, banded) and any two colours, and the pattern turns as it rolls.
+
+**Lengths:** most activities and the bigger fidgets run for a random length, from a few seconds to several minutes. Short ones are more common, but each longer stretch is still fairly likely: he can read a book for 4 minutes, sit on a puzzle cube for 6, or play with a spinner for 5.
 
 | activity | what happens | where |
 |---|---|---|
@@ -254,16 +256,17 @@ Every 30 to 60 minutes (`activityGapMin` / `activityGapMax`), when he's standing
 | BLOCKS | stacks four toy blocks (random colours) into a wobbly tower. Sometimes it falls over | anywhere |
 | MAIL | a letter floats down, he catches it and reads it out (MAIL_READ) | anywhere |
 | MEDITATE | sits with his eyes closed and floats up a little | anywhere |
-| CUBE | twists a puzzle cube. The cube keeps track of every sticker, so a solve is real: it gets scrambled, then he undoes the twists. Versions: solves it (holds it up), speed solve, a 2x2 cube, gives up (shakes it), or messes up a solved one | anywhere |
+| CUBE | twists a puzzle cube, usually for minutes. The cube keeps track of every sticker, so a solve is real: it gets scrambled, then he undoes the twists, stopping to think now and then. After a solve he often scrambles it and goes again. Versions: solves it (holds it up), speed solve, a 2x2 cube, gives up (works at it for a while, then shakes it), or messes up a solved one | anywhere |
 
 He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing.
 
 ### Fidgets
 
-Between activities, every 10 to 20 minutes (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE or COIN. He only says something about 1 time in 8.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN or STRESSBALL. He only says something about 1 time in 8. SPINNER, COIN and STRESSBALL can go on for minutes.
 
-- **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down. Sometimes he flicks it again.
-- **COIN:** flips a gold, silver or copper coin. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor.
+- **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
+- **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
+- **STRESSBALL:** squeezes a stress ball (any ball pattern and colours), squashing it flatter the harder he squeezes, with an annoyed face. Sometimes tosses it over his head to the other hand.
 
 ## Minecraft
 

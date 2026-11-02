@@ -37,8 +37,10 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - Minecraft gear is diamond only, never netherite.
 - Draw original pixel art only. No characters or logos from games, films or brands (so no creepers, for example).
 - For a release: bump `versionCode` and `versionName` in `app/build.gradle`, rebuild, replace `apk/Squib.apk`, update the version and any changed behaviour in `README.md`.
-- Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`. `SIM_OPTS="-Dreal=1" tools/sim/run.sh stress 12` runs with the real timings and reports the most activities in any hour and fidgets in any 10 minutes (limits: 2 and 1).
-- Activities are limited to 2 an hour and fidgets to 1 per 10 minutes (the user asked for this). Keep new activities within those limits.
+- Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`. `SIM_OPTS="-Dreal=1" tools/sim/run.sh stress 12` runs with the real timings and reports the most activities in any hour and fidgets in any 10 minutes.
+- Activities are at most 1 an hour (1 to 2 hours apart). Fidgets are frequent (1.5 to 5 minutes after the last one ends) and some go on for minutes (the user asked for this: fidget a lot, do activities less often). The gaps are in `squib.json` settings.
+- Lengths: activities and the bigger fidgets use `Fun.span(lo, hi)` so they run anywhere from seconds to minutes. Don't make everything a few seconds long.
+- Voice lines are dry, sarcastic and a bit edgy, not cute or corny (the user asked for this). No puns for the sake of puns, no "you're doing great". Keep it mean-funny, not hateful, and no jokes about self-harm.
 - Every change the user asks for also adds at least one new activity or fidget (the user asked for this).
 - Versions should be procedural: a new colour, pattern or shape is data fed to one animation (see `Props.java`, `Fun.tint`, `Fun.ball`), not a new hand-drawn animation.
 - A new activity or fidget needs: its id, an entry in `NAMES`, `WHERE` and `WEIGHT` (fidgets go after `LAST_ACTIVITY`), a case in `start`, `update` and `draw`, and if it has versions, a list in `Fun.variantNames` and `choose` / `chooseW` in `start` so the picker in settings can ask for one. `Fun.label` gives the picker name if the id doesn't read well.

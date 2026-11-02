@@ -72,20 +72,28 @@ final class Props {
      * the shading and shine stay put, like light from the top left.
      */
     static String[] ballRows(int[] look, int rot) {
+        return ballRows(look, rot, 0);
+    }
+
+    /** squash 0..2: squeezed flatter and wider by that many pixels (a stress ball). */
+    static String[] ballRows(int[] look, int rot, int squash) {
         int size = look[0], pattern = look[1];
         char c1 = light(look[2]), c2 = light(look[3]);
-        if (size <= 3) { // too small for patterns: a dot of the second colour in the middle
+        if (size <= 3 && squash == 0) { // too small for patterns: a dot of the second colour in the middle
             char mid = pattern == 0 ? 'w' : c2 == c1 ? 'w' : c2;
             return new String[]{"." + c1 + ".", "" + c1 + mid + c1, "." + dark(c1) + "."};
         }
         double r = size / 2.0;
         double ang = (rot & 7) * Math.PI / 4, cos = Math.cos(ang), sin = Math.sin(ang);
-        int shineX = (int) Math.floor(r - r * 0.45), shineY = shineX;
-        String[] rows = new String[size];
-        for (int y = 0; y < size; y++) {
+        int bw = size + squash, h = size - squash;
+        double rx = bw / 2.0, ry = h / 2.0;
+        int shineX = (int) Math.floor(rx - rx * 0.45), shineY = (int) Math.floor(ry - ry * 0.45);
+        String[] rows = new String[h];
+        for (int y = 0; y < h; y++) {
             StringBuilder b = new StringBuilder();
-            for (int x = 0; x < size; x++) {
-                double px = x + 0.5 - r, py = y + 0.5 - r;
+            for (int x = 0; x < bw; x++) {
+                // squashed into a circle of radius r, so patterns and shading still fit
+                double px = (x + 0.5 - rx) / rx * r, py = (y + 0.5 - ry) / ry * r;
                 double dist = Math.hypot(px, py);
                 if (dist > r - (size <= 3 ? 0.15 : 0.05)) {
                     b.append('.');

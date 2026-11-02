@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 39,
             // quick fidgets (their own timer)
             STRETCH = 40, SPIN = 41, TRIP = 42, SCRATCH = 43, YAWN = 44, SPINNER = 45, HICCUP = 46, SHAKE = 47,
-            WHISTLE = 48, COIN = 49,
+            WHISTLE = 48, COIN = 49, STRESSBALL = 50,
             FIRST_FIDGET = 40;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,27 +43,27 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH,
             ANY, FLOOR, ANY, ANY, ANY, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
             ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2, 5, 1, 2, 2, 2, 25,
             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            3, 3, 2, 3, 2, 4, 2, 2, 2, 3};
+            3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
-    /** Seconds between activities. 30 to 60 minutes: at most 2 an hour. */
-    static double activityGapMin = 1800;
-    static double activityGapMax = 3600;
-    /** Seconds between fidgets. 10 to 20 minutes: at most 6 an hour. */
-    static double fidgetGapMin = 600;
-    static double fidgetGapMax = 1200;
+    /** Seconds between activities. 1 to 2 hours: at most 1 an hour. */
+    static double activityGapMin = 3600;
+    static double activityGapMax = 7200;
+    /** Seconds between fidgets. 1.5 to 5 minutes, so he fidgets a lot (some fidgets last minutes). */
+    static double fidgetGapMin = 90;
+    static double fidgetGapMax = 300;
     /** Hours when he sleeps (24-hour clock, can wrap past midnight: 23 to 6 works). */
     static double bedtimeStart = 0;
     static double bedtimeEnd = 5;
@@ -111,15 +111,18 @@ final class Fun {
     static int balls = 3;
     static float roll;
     static int spinType, spinBody, spinWeight;
-    static double spinAngle, spinVel, reflickAt;
+    static double spinAngle, spinVel;
     static Props.Cube cube;
     static final ArrayList<int[]> cubeMoves = new ArrayList<int[]>();
     static int[] lastMove;
     static double lastMoveAt;
     static String cubeKey;
     static Bitmap cubeBmp;
-    static int metal;
-    static boolean heads;
+    static int metal, flipsLeft;
+    static boolean heads, spinHand, scrambling;
+    static double spinToss = -1, nextFlick, sessionEnd;
+    static final ArrayList<int[]> pendingSolve = new ArrayList<int[]>();
+    static int squeeze;
     static int[] hulaColors = {4, 1};
     static int[] blockColors = {0, 1, 2, 3};
     static int yoyoColor = 4;
@@ -336,6 +339,14 @@ final class Fun {
         return lo + rng.nextDouble() * (hi - lo);
     }
 
+    /**
+     * A random length of time between lo and hi seconds, spread so short ones are common and
+     * long ones (minutes) still happen: each doubling of length is about as likely as the last.
+     */
+    static double span(double lo, double hi) {
+        return lo * Math.pow(hi / lo, rng.nextDouble());
+    }
+
     /** A weighted random index that ignores the picker. */
     static int chooseRandom(double... w) {
         int keep = want;
@@ -378,6 +389,7 @@ final class Fun {
             case CUBE: return "puzzle cube";
             case SPINNER: return "fidget spinner";
             case COIN: return "coin flip";
+            case STRESSBALL: return "stress ball";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -400,6 +412,7 @@ final class Fun {
             case SPINNER: return Props.SPINNERS;
             case CUBE: return new String[]{"solves it", "speed solve", "2x2 cube", "gives up", "messes it up"};
             case COIN: return new String[]{"gold", "silver", "copper", "drops it"};
+            case STRESSBALL: return Props.PATTERNS;
             default: return null;
         }
     }
@@ -669,28 +682,28 @@ final class Fun {
                 bvh = 0;
                 bvx = 0;
                 kicks = 0;
-                kicksWanted = rng.nextInt(4) + 3;
+                kicksWanted = 2 + (int) span(1, 16);
                 alpha = 255;
-                actEnd = t + 30;
+                actEnd = t + 20 + kicksWanted * 6;
                 break;
             case PLANE:
                 actEnd = t + 10;
                 break;
             case BUBBLES:
-                actEnd = t + rand(7, 11);
+                actEnd = t + span(7, 70);
                 nextEvent = t + 0.6;
                 break;
             case BOOK:
-                actEnd = t + rand(12, 22);
+                actEnd = t + span(12, 240);
                 nextEvent = t + 3;
                 flipUntil = 0;
                 break;
             case YOYO:
                 yoyoColor = rng.nextInt(Props.BRIGHT);
-                actEnd = t + rand(7, 11);
+                actEnd = t + span(7, 90);
                 break;
             case DANCE:
-                actEnd = t + rand(6, 9);
+                actEnd = t + span(6, 75);
                 nextEvent = t;
                 break;
             case WAVE:
@@ -706,19 +719,19 @@ final class Fun {
                 break;
             case NAP:
                 v.setMotion(SquibView.Motion.SLEEP);
-                actEnd = t + rand(20, 45);
+                actEnd = t + span(20, 300);
                 break;
             case TEA:
-                actEnd = t + rand(9, 14);
+                actEnd = t + span(9, 120);
                 nextEvent = t + 0.5;
                 sipAt = t + 2;
                 break;
             case GUITAR:
-                actEnd = t + rand(7, 11);
+                actEnd = t + span(7, 150);
                 nextEvent = t + 0.4;
                 break;
             case JUGGLE: {
-                actEnd = t + rand(6, 9);
+                actEnd = t + span(6, 100);
                 int how = chooseW(0.45, 0.17, 0.08, 0.3); // 3, 4 or 5 balls, or drops them
                 variant = how == 3 ? 1 : 0; // 1: drops them at the end
                 balls = how < 3 ? 3 + how : 3 + chooseRandom(0.6, 0.3, 0.1);
@@ -738,24 +751,24 @@ final class Fun {
             }
             case KITE:
                 v.facing = center(v) < v.screenW / 2f ? 1 : -1;
-                actEnd = t + rand(10, 16);
+                actEnd = t + span(10, 200);
                 break;
             case FISHING:
                 v.facing = center(v) < v.screenW / 2f ? 1 : -1; // cast toward the middle of the screen
                 variant = chooseW(0.55, 0.3, 0.15); // shrimp, fish, boot
                 bh = (float) rand(90, 150) * d; // line length
-                mark = t + 0.8 + 1.5 + rand(3, 7); // when he gets a bite
-                actEnd = t + 30;
+                mark = t + 0.8 + 1.5 + span(3, 90); // when he gets a bite
+                actEnd = mark + 30;
                 break;
             case RAIN:
                 actEnd = t + rand(9, 12);
                 nextEvent = t + 0.6;
                 break;
             case SKATE:
-                count = rng.nextInt(2) + 2; // passes
+                count = 1 + (int) span(1, 9); // passes
                 phase = 0;
                 pickSkateTarget(v);
-                actEnd = t + 30;
+                actEnd = t + 15 + count * 10;
                 break;
             case ICECREAM:
                 count = 3; // bites left
@@ -775,14 +788,14 @@ final class Fun {
                 actEnd = t + 5;
                 break;
             case STARGAZE:
-                actEnd = t + rand(10, 14);
+                actEnd = t + span(10, 240);
                 nextEvent = t + rand(1.5, 2.5);
                 break;
             case SNEEZE:
                 actEnd = t + 1.5;
                 break;
             case JUMPROPE:
-                actEnd = t + rand(6, 9);
+                actEnd = t + span(6, 45);
                 count = -1;
                 break;
             case PAINT:
@@ -798,7 +811,7 @@ final class Fun {
                     order[i] = order[j];
                     order[j] = tmp;
                 }
-                mark = t + rand(6, 8); // done painting
+                mark = t + span(6, 90); // done painting
                 actEnd = mark + 2.5;
                 nextEvent = t;
                 break;
@@ -822,12 +835,12 @@ final class Fun {
                 nextEvent = t;
                 break;
             case DRUMS:
-                actEnd = t + rand(6, 9);
+                actEnd = t + span(6, 100);
                 count = -1;
                 break;
             case HULA:
                 hulaColors = Props.twoColors(rng, Props.BRIGHT);
-                actEnd = t + rand(6, 9);
+                actEnd = t + span(6, 60);
                 nextEvent = t;
                 break;
             case BOOMERANG:
@@ -884,7 +897,7 @@ final class Fun {
                 break;
             case MEDITATE:
                 v.seated = true;
-                actEnd = t + rand(9, 12);
+                actEnd = t + span(9, 200);
                 nextEvent = t + 1;
                 break;
             case CUBE: {
@@ -896,7 +909,7 @@ final class Fun {
                 cubeKey = null;
                 ArrayList<int[]> scramble = new ArrayList<int[]>();
                 int[] prev = null;
-                int k = variant == 4 ? 0 : variant == 1 ? 12 : variant == 2 ? 5 : 7 + rng.nextInt(3);
+                int k = variant == 4 ? 0 : variant == 1 ? 14 + rng.nextInt(6) : variant == 2 ? 6 + rng.nextInt(4) : 12 + rng.nextInt(9);
                 for (int i = 0; i < k; i++) {
                     prev = cube.randomMove(rng, prev);
                     cube.turn(prev);
@@ -914,9 +927,13 @@ final class Fun {
                         cubeMoves.add(prev);
                     }
                 }
-                gap = variant == 1 ? 0.16 : rand(0.4, 0.6);
-                mark = t + rand(0.8, 1.4); // first twist
-                actEnd = t + 60; // ends itself
+                gap = variant == 1 ? 0.16 : rand(0.5, 1.0);
+                mark = t + rand(1, 3); // looks at it first
+                scrambling = false;
+                pendingSolve.clear();
+                // How long he keeps at it: solves it again and again, or works at it before giving up.
+                sessionEnd = t + (variant == 4 ? 0 : variant == 1 ? span(20, 200) : span(40, 360));
+                actEnd = t + 3600; // ends itself
                 break;
             }
             case SPINNER:
@@ -926,8 +943,18 @@ final class Fun {
                 spinWeight = rng.nextDouble() < 0.3 ? 9 : sc[1];
                 spinAngle = rng.nextDouble() * Math.PI * 2;
                 spinVel = 0;
-                actEnd = t + rand(2.5, 5);
-                reflickAt = rng.nextDouble() < 0.4 ? t + rand(1.3, actEnd - t - 0.7) : 1e18;
+                spinHand = right(v);
+                spinToss = -1;
+                nextFlick = t + 0.3;
+                actEnd = t + span(4, 300); // a few seconds, or minutes of it
+                break;
+            case STRESSBALL:
+                ballLook = Props.ballLook(rng, 5, 6, want >= 0 ? want % Props.PATTERNS.length : -1);
+                spinHand = right(v);
+                spinToss = -1;
+                squeeze = 0;
+                nextEvent = t + rand(0.4, 1.0);
+                actEnd = t + span(5, 240);
                 break;
             case HICCUP:
                 count = 0;
@@ -938,7 +965,7 @@ final class Fun {
                 actEnd = t + rand(0.9, 1.7);
                 break;
             case WHISTLE:
-                actEnd = t + rand(1.8, 3.6);
+                actEnd = t + span(1.8, 25);
                 nextEvent = t + 0.3;
                 gap = rand(0.45, 0.8);
                 break;
@@ -957,7 +984,8 @@ final class Fun {
                 heads = rng.nextBoolean();
                 mark = t + rand(0.35, 0.6); // flick
                 gap = rand(0.85, 1.15); // time in the air
-                actEnd = t + 8;
+                flipsLeft = (int) span(1, 15) - 1; // flips after this one
+                actEnd = t + 900;
                 break;
             case TRIP:
                 v.kick(4);
@@ -2161,25 +2189,87 @@ final class Fun {
                 break;
             }
             case SPINNER: {
-                arm(v, right, 1);
-                v.lookX = v.facing;
+                boolean h = spinHand;
+                arm(v, h, 1);
+                arm(v, !h, 0);
+                v.lookX = h ? 1 : -1;
                 v.lookY = -1;
-                if (spinVel == 0 && el > 0.3) { // flick it
+                boolean wrapping = t > actEnd;
+                if (spinToss >= 0) { // tossed up, spinning, comes back down
+                    double p = (t - spinToss) / 0.9;
+                    arm(v, h, p < 0.2 || p > 0.8 ? 2 : 1);
+                    if (p >= 1) {
+                        spinToss = -1;
+                        v.kick(0.8);
+                    }
+                } else if (spinVel < 3 && t >= nextFlick && !wrapping) {
+                    double r = rng.nextDouble();
+                    if (r < 0.15) { // over to the other hand
+                        spinHand = !spinHand;
+                        v.kick(0.6);
+                    } else if (r < 0.3 && spinVel > 0) {
+                        spinToss = t;
+                        v.kick(1.2);
+                    }
                     spinVel = rand(18, 32);
-                    v.kick(1);
+                    arm(v, h, 2);
+                    v.kick(0.8);
+                    nextFlick = 1e18;
+                } else if (spinVel < 3 && nextFlick > 1e17 && !wrapping) {
+                    nextFlick = t + span(0.3, 6); // stops to look at it, or gets straight back to it
                 }
-                if (t >= reflickAt) { // another flick
-                    reflickAt = 1e18;
-                    spinVel += rand(12, 22);
-                    v.kick(1);
-                    v.happyFor = 0.5;
+                if (spinVel < 3 && nextFlick > t + 2) {
+                    v.lookY = 0; // staring into space between flicks
+                    v.lookX = 0;
                 }
                 spinVel *= Math.exp(-0.45 * dt);
-                spinAngle += spinVel * dt * (right ? 1 : -1);
-                if (spinVel > 0 && spinVel < 22) {
+                if (spinVel < 0.4) {
+                    spinVel = 0;
+                }
+                spinAngle += spinVel * dt * (h ? 1 : -1);
+                if (spinVel > 8 && spinVel < 22) {
                     v.face = SquibView.Face.HAPPY;
                 }
-                if (t > actEnd) {
+                if ((wrapping && spinVel < 5 && spinToss < 0) || t > actEnd + 12) {
+                    end(v);
+                }
+                break;
+            }
+            case STRESSBALL: {
+                boolean h = spinHand;
+                v.lookX = h ? 1 : -1;
+                arm(v, !h, 0);
+                if (spinToss >= 0) { // tossed over his head to the other hand
+                    double p = (t - spinToss) / 0.8;
+                    v.armLiftL = 2;
+                    v.armLiftR = 2;
+                    v.lookY = -1;
+                    v.lookX = 0;
+                    if (p >= 1) {
+                        spinToss = -1;
+                        spinHand = !spinHand;
+                        v.kick(0.6);
+                    }
+                } else {
+                    arm(v, h, 1);
+                    if (t >= nextEvent) {
+                        if (squeeze == 0 && rng.nextDouble() < 0.12) {
+                            spinToss = t;
+                            nextEvent = t + 0.8 + rand(0.4, 1.5);
+                        } else {
+                            // squeeze harder, hold, let go
+                            squeeze = squeeze >= 2 ? 0 : squeeze + 1;
+                            nextEvent = t + (squeeze == 2 ? rand(0.4, 1.8) : squeeze == 0 ? span(0.3, 4) : rand(0.12, 0.3));
+                            if (squeeze == 2) {
+                                v.kick(-0.6);
+                            }
+                        }
+                    }
+                    if (squeeze == 2) {
+                        v.face = SquibView.Face.ANNOYED;
+                    }
+                }
+                if (t > actEnd && spinToss < 0) {
                     end(v);
                 }
                 break;
@@ -2191,6 +2281,18 @@ final class Fun {
                 v.armLiftL = 1;
                 v.armLiftR = 1;
                 if (phase == 0) {
+                    if (t >= mark && cubeMoves.isEmpty() && scrambling) { // scrambled: now solve it
+                        scrambling = false;
+                        cubeMoves.addAll(pendingSolve);
+                        pendingSolve.clear();
+                        mark = t + rand(1, 4); // studies it first
+                    }
+                    if (t >= mark && cubeMoves.isEmpty() && variant == 3 && t < sessionEnd) { // keeps trying
+                        for (int i = 0; i < 6; i++) {
+                            lastMove = cube.randomMove(rng, lastMove);
+                            cubeMoves.add(lastMove);
+                        }
+                    }
                     if (t >= mark) {
                         if (cubeMoves.isEmpty()) {
                             phase = 1;
@@ -2212,9 +2314,9 @@ final class Fun {
                             cube.turn(lastMove);
                             lastMoveAt = t;
                             count++;
-                            double g = gap * rand(0.8, 1.25);
-                            if (variant != 1 && rng.nextDouble() < 0.15) {
-                                g += rand(0.7, 1.4); // stops to think
+                            double g = scrambling ? 0.1 : gap * rand(0.8, 1.25);
+                            if (!scrambling && variant != 1 && rng.nextDouble() < 0.2) {
+                                g += span(1, 8); // stops to think
                             }
                             mark = t + g;
                         }
@@ -2246,7 +2348,23 @@ final class Fun {
                         v.lookX = 0;
                     }
                     if (e > 2.3) {
-                        end(v);
+                        if (variant <= 2 && t < sessionEnd) { // scramble it and go again
+                            phase = 0;
+                            scrambling = true;
+                            cubeMoves.clear();
+                            pendingSolve.clear();
+                            int[] prev = null;
+                            int k = cube.n == 2 ? 6 + rng.nextInt(4) : variant == 1 ? 14 + rng.nextInt(6) : 12 + rng.nextInt(9);
+                            for (int i = 0; i < k; i++) {
+                                prev = cube.randomMove(rng, prev);
+                                cubeMoves.add(prev);
+                                pendingSolve.add(0, new int[]{prev[0], prev[1], -prev[2]});
+                            }
+                            mark = t + rand(0.5, 1.5);
+                            maybeSay(v, "CUBE_AGAIN", 0.3);
+                        } else {
+                            end(v);
+                        }
                     }
                 }
                 if (t > actEnd) {
@@ -2287,7 +2405,16 @@ final class Fun {
                     arm(v, right, 2);
                     v.lookX = v.facing;
                     if (t - mark > 1.4) {
-                        end(v);
+                        if (flipsLeft > 0) { // again
+                            flipsLeft--;
+                            phase = 0;
+                            mark = t + span(0.4, 6);
+                            gap = rand(0.85, 1.15);
+                            heads = rng.nextBoolean();
+                            variant = rng.nextDouble() < 0.08 ? 1 : 0;
+                        } else {
+                            end(v);
+                        }
                     }
                 } else {
                     arm(v, right, 0);
@@ -3068,7 +3195,11 @@ final class Fun {
                 break;
             }
             case SPINNER: {
-                int hx = handPx(v, right), hy = handPy(v, right) - 3;
+                int hx = handPx(v, spinHand), hy = handPy(v, spinHand) - 3;
+                if (spinToss >= 0) {
+                    double p = Math.min(1, (v.t - spinToss) / 0.9);
+                    hy -= (int) Math.round(4 * 9 * p * (1 - p));
+                }
                 char body = Props.light(spinBody), weight = Props.light(spinWeight);
                 double reach = Props.spinnerReach(spinType);
                 int blur = (int) clamp((float) (spinVel - 10) * 8, 0, 150); // fast: a see-through disc
@@ -3110,6 +3241,25 @@ final class Fun {
                 float gy = up ? top(v) - 10 : armRow(v) + 1;
                 float wob = phase == 1 && variant == 3 ? (((int) ((v.t - mark) / 0.09)) % 2 == 0 ? -1 : 1) : 0;
                 drawBmp(c, cubeBmp, sx(v, 14 - w / 2 + wob), sy(v, gy, lift), S, 255);
+                break;
+            }
+            case STRESSBALL: {
+                int size = ballLook[0];
+                int sq = spinToss >= 0 ? 0 : squeeze;
+                String[] rows = Props.ballRows(ballLook, 0, sq);
+                Bitmap b = bmp(Props.ballKey(ballLook, 0) + "_sq" + sq, rows)[0];
+                float w = rows[0].length(), hgt = rows.length;
+                float cx, by;
+                if (spinToss >= 0) { // arc from one hand to the other, over his head
+                    double p = Math.min(1, (v.t - spinToss) / 0.8);
+                    float x0 = handPx(v, spinHand) + 0.5f, x1 = handPx(v, !spinHand) + 0.5f;
+                    cx = (float) (x0 + (x1 - x0) * p);
+                    by = handPy(v, spinHand) + 1 - (float) (4 * 14 * p * (1 - p));
+                } else {
+                    cx = handPx(v, spinHand) + 0.5f;
+                    by = handPy(v, spinHand) + 1;
+                }
+                drawBmp(c, b, sx(v, Math.round(cx - w / 2)), sy(v, Math.round(by - hgt), lift), S, 255);
                 break;
             }
             case COIN: {
