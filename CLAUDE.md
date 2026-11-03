@@ -1,7 +1,7 @@
 # squib
 
-Android desktop-pet app: a pixel squid drawn over other apps. Plain Java, no libraries, no AndroidX.
-Package `com.squib.buddy`, minSdk 26, targetSdk 34.
+Desktop-pet app for Android and Windows: a pixel squid drawn over other apps. One engine, written once in plain Java (no libraries, no AndroidX); the Windows app runs the same code, turned into C# when it's built.
+Android: package `com.squib.buddy`, minSdk 26, targetSdk 34. Windows: .NET Framework 4 / C# 5, built with the csc.exe that ships with Windows.
 
 ## Layout
 
@@ -19,12 +19,17 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - `signing/squib-debug.keystore`: the key every build has been signed with (password `android`, alias `androiddebugkey`). Always sign with it, or the new APK won't install over the phone's copy.
 - `apk/Squib.apk`: the current release, committed so the user can download it from GitHub.
 - `tools/build-apk.sh`: builds `apk/Squib.apk` without Gradle or the Android SDK (for cloud sessions where Google's servers are blocked).
+- `desktop/`: the Windows app.
+  - `port/Port.cs`: turns the engine Java (`SquibView`, `Fun`, `Art`, `Props`, `Pick`, `PixelFont`) into C# in `desktop/gen`, plus `Lines` from `squib.json` and `Version` from `app/build.gradle`. `port/patches.txt`: fixes the rules can't make, and the desktop hooks (floor, eyes following the cursor, greeting wording). `gen/` is regenerated on every build and not committed: never edit it.
+  - `src/`: the Windows-only parts. `Java.cs` / `Android.cs` stand in for the Java and Android classes the engine uses (same behaviour: Java rounding, Random, string hashes). `Engine.cs`: desktop versions of `Apps`, `Prefs`, `Lines.get/set`, and the hooks `SquibView.deskPlace()` / `deskLook()`. `Host.cs`: the window, mouse, napping when away, focus timer, pause, menu pages. `Menu.cs`: the pixel menu. `Tray.cs`: tray icon. `Modes.cs`: app modes from the window in front (programs, and browser tab titles). `Remote.cs`: downloads `squib.json`. `Program.cs`: startup, Minecraft hotbar (`GameWatch`), start with Windows. `Sim.cs`: `Squib.exe --sim`.
+  - `Squib.exe`: the current Windows release, committed like the APK.
 - `tools/sim/`: runs squib on a computer with stand-in Android classes. `tools/sim/run.sh sheets [NAMES]` renders pictures of activities to `build/sim/`; `tools/sim/run.sh stress 8` simulates 8 hours of random use and fails on any crash.
 
 ## Building
 
 - With the Android SDK: `./gradlew assembleDebug` (output in `app/build/outputs/apk/debug/`). Copy the result to `apk/Squib.apk` for a release.
 - Without it: `tools/build-apk.sh`.
+- Windows: `desktop\build.cmd` (runs the port, then builds `desktop\Squib.exe`). `desktop\Squib.exe --sim sheets|picks|stress 8` does what `tools/sim/run.sh` does, without Java (results in `desktop\build\sim`).
 
 ## Design language
 
@@ -47,7 +52,12 @@ Everything drawn should look like it belongs to him:
 - Bedtime (midnight to 8am by default, set by the user in his settings: prefs `bedStart` / `bedEnd`, minutes after midnight, copied into `Fun.bedtimeStart/End` by `SquibView.reloadPrefs()`; `Remote` ignores `bedtime*` keys in squib.json): he sleeps, and wakes now and then to nag (`SquibView.bedtime()` and the late check in `wellbeing()`). Nagging runs from an hour before bedtime to 5 hours into it (`Fun.nagPhase()`), then he just sleeps. New activities must not start during bedtime. The sim uses the real clock, so run sheets with e.g. `TZ=America/Los_Angeles` if it's bedtime where you are.
 - Minecraft gear is diamond only, never netherite.
 - Draw original pixel art only. No characters or logos from games, films or brands (so no creepers, for example).
-- For a release: bump `versionCode` and `versionName` in `app/build.gradle`, rebuild, replace `apk/Squib.apk`, update the version and any changed behaviour in `README.md`.
+- For a release: bump `versionCode` and `versionName` in `app/build.gradle` (the Windows app takes its version from there too), rebuild both apps, replace `apk/Squib.apk` and `desktop/Squib.exe`, update the version and any changed behaviour in `README.md`.
+- Both apps run the same engine. A change to what squib does goes in the Java once; then build the Windows app too (`desktop\build.cmd`) and fix anything the port reports, usually a patch in `desktop/port/patches.txt` whose text no longer matches `desktop/gen`. Only platform things (the window or overlay, input, menus, tray or notification, app detection) go in `desktop/src` or the Android-only classes.
+- Keep the engine Java easy to port: no lambdas, method references or anonymous classes (`Pick`'s one is patched), and plain Java 8. The port handles locals named like methods, jagged arrays, int-to-char constants and switch ends; anything else it can't, make a patch.
+- Things don't happen the same way on both platforms: on Android, app modes go by the app's package; on Windows by the program in front and, for browsers, the tab's title (X, YouTube and Reddit are usually browser tabs there). Windows lists are in `desktop/src/Modes.cs` and `squib.json` `desktopApps`; Android's in `Apps.java` and `apps`.
+- Windows-only line groups (FOCUS_START, FOCUS_DONE, FOCUS_STOP, CURSOR, ZOOM, GOODBYE) live in `squib.json` like the rest; the phone ignores them. Same tone rules.
+- The Windows app stores stats in `%APPDATA%\Squib\prefs.txt` (first run copies the first Windows Squib's `memory.txt`, leaving it as it was). Squib on Windows must never take focus (`WS_EX_NOACTIVATE`) or block clicks outside his own pixels.
 - Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`. `SIM_OPTS="-Dreal=1" tools/sim/run.sh stress 12` runs with the real timings and reports the most activities in any hour and fidgets in any 10 minutes.
 - Activities are at most 1 an hour (1 to 2 hours apart). Fidgets are frequent (1.5 to 5 minutes after the last one ends) and some go on for minutes (the user asked for this: fidget a lot, do activities less often). The gaps are in `squib.json` settings.
 - Lengths: activities and the bigger fidgets use `Fun.span(lo, hi)` so they run anywhere from seconds to minutes. Don't make everything a few seconds long.

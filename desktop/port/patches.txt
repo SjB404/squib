@@ -1,0 +1,119 @@
+﻿# Fixes the translator in Port.cs can't make by rule, applied to the generated C# in desktop/gen.
+# Format: see the end of Port.cs. Each <<< ... === ... >>> must match the generated text exactly
+# once, or the port fails and says which patch, so it's clear when the Java changed under one.
+
+@@ Pick
+# Java anonymous class -> a small named class (in desktop/src/Engine.cs)
+<<<
+        Collections.sort(stale, new Comparator<string>() {
+            public int compare(string a, string b) {
+                return recent.lastIndexOf(a.hashCode()) - recent.lastIndexOf(b.hashCode());
+            }
+        });
+===
+        Collections.sort(stale, new ByRecent());
+>>>
+
+# SquibView has a field and a method both called face
+rename face updateFace
+
+
+@@ Fun
+# Java turns the int 0 into a char by itself
+<<<
+penOut ? 'e' : 0};
+===
+penOut ? 'e' : (char) 0};
+>>>
+
+@@ SquibView
+<<<
+            if (nextDouble < 0.35d) {
+                c = 0;
+===
+            if (nextDouble < 0.35d) {
+                c = (char) 0;
+>>>
+
+@@ Props
+# Java lets an inner block's local reuse a name declared after the block; C# doesn't
+<<<
+            string[] @out = new string[5];
+            for (int i = 0; i < 5; i++) {
+                @out[i] = new string(g[i]);
+            }
+            return @out;
+===
+            string[] whole = new string[5];
+            for (int i = 0; i < 5; i++) {
+                whole[i] = new string(g[i]);
+            }
+            return whole;
+>>>
+
+@@ SquibView
+# desktop: the floor is the taskbar or Minecraft's hotbar, and perches stay clear of close buttons
+# (SquibView.deskPlace in desktop/src/Engine.cs)
+<<<
+    public void place() {
+===
+    public void place() {
+        if (deskPlace()) return;
+>>>
+
+# desktop: his eyes follow the cursor when he's standing around
+<<<
+                this.lookX = 0;
+                this.lookY = this.perched ? 1 : 0;
+===
+                if (!deskLook()) {
+                    this.lookX = 0;
+                    this.lookY = this.perched ? 1 : 0;
+                }
+>>>
+
+# desktop: the greetings say where he lives and how to use a mouse on him
+<<<
+"hi! i'm squib. i live in your phone now. tap me, hold your finger on me to pet me, or double-tap for ink."
+===
+"hi! i'm squib. i live on your taskbar now. click me, wiggle the mouse over me to pet me, double-click for ink, or right-click for my menu."
+>>>
+<<<
+" of living in your phone."
+===
+" of living on your computer."
+>>>
+
+@@ Fun
+# Java lets a case's local share a field's name (metal, used by COIN); C# doesn't within one switch
+<<<
+                string metal = Props.METAL_PAIRS[rng.nextInt(2)]; // gold or silver
+===
+                string metalPair = Props.METAL_PAIRS[rng.nextInt(2)]; // gold or silver
+>>>
+<<<
+                        case 3: ringCol[i] = metal.charAt(i % 2); break;
+===
+                        case 3: ringCol[i] = metalPair.charAt(i % 2); break;
+>>>
+
+# Java lets a later local reuse the name of one in an earlier inner block (landed, card riffle); C# doesn't
+<<<
+                int launched = 0, landed = 0;
+===
+                int launched = 0, caught = 0;
+>>>
+<<<
+                        if (p >= 1) {
+                            landed++;
+                        } else { // an arc from hand to hand, over the front of him
+===
+                        if (p >= 1) {
+                            caught++;
+                        } else { // an arc from hand to hand, over the front of him
+>>>
+<<<
+                cardAt(v, c, card, bxx, byy, stackLayers(landed), lift);
+===
+                cardAt(v, c, card, bxx, byy, stackLayers(caught), lift);
+>>>

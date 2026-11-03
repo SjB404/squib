@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58, TOP = 59,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING", "TOP"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4, 5};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -218,6 +218,8 @@ final class Fun {
     static String listenPkg;
     static boolean quietInApp;
     static double listenOn = -1, listenOff = -1, quietFor, nextVibe, vibeEnd, beatGap = 0.5;
+    /** Spinning top: colour pair. Uses ox (where it is), ovx (drift), spinAngle (how far it's turned), gap (how long it spins), side (which way it falls). */
+    static int topColor;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
     static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
@@ -532,6 +534,7 @@ final class Fun {
             case TEXT: return "texting";
             case TOSS: return "paper toss";
             case SPRING: return "spring toy";
+            case TOP: return "spinning top";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -562,6 +565,7 @@ final class Fun {
             case BUBBLEWRAP: return WRAP_MODES;
             case TOSS: return new String[]{"gets them in", "misses"};
             case SPRING: return SPRING_MODES;
+            case TOP: return Props.PAIR_NAMES;
             default: return null;
         }
     }
@@ -1204,6 +1208,12 @@ final class Fun {
                 newWrap();
                 nextEvent = t + rand(0.5, 1.2); // looks it over first
                 actEnd = t + span(6, 240); // one sheet, or a few minutes of sheets
+                break;
+            case TOP:
+                topColor = choose(Props.PAIRS.length);
+                rollsLeft = (int) span(1, 8) - 1; // spins after this one
+                mark = t + rand(0.4, 0.9); // winds it up first
+                actEnd = t + 1800;
                 break;
             case STRESSBALL:
                 ballLook = Props.ballLook(rng, 5, 6, want >= 0 ? want % Props.PATTERNS.length : -1);
@@ -2823,6 +2833,67 @@ final class Fun {
                 }
                 break;
             }
+            case TOP: {
+                if (phase == 0) { // winding it up in his hand
+                    arm(v, right, 1 + ((int) (el * 6)) % 2);
+                    v.lookX = v.facing;
+                    v.lookY = 0;
+                    if (t >= mark) { // and lets it go on the floor in front of him
+                        phase = 1;
+                        mark = t;
+                        gap = span(3, 40); // how long it spins
+                        // out in front, clear of his arms; behind him if he's at the edge
+                        ox = center(v) + v.facing * 16 * S;
+                        if (ox < v.minX + 4 * S || ox > v.maxX + 24 * S) {
+                            ox = center(v) - v.facing * 16 * S;
+                        }
+                        ovx = (float) rand(-6, 6) * d;
+                        spinAngle = 0;
+                        arm(v, right, 2);
+                        v.kick(1);
+                    }
+                } else if (phase == 1) { // spinning, slowing down, wandering a little
+                    arm(v, right, 0);
+                    double speed = Math.max(0, 1 - (t - mark) / gap);
+                    spinAngle += (4 + 26 * speed) * dt;
+                    if (rng.nextDouble() < dt * 0.5) {
+                        ovx = (float) rand(-8, 8) * d;
+                    }
+                    ox += ovx * (float) (speed * dt);
+                    float away = ox - center(v);
+                    if (Math.abs(away) < 13 * S || ox < v.minX + 4 * S || ox > v.maxX + 24 * S) { // bumps off him or the edge
+                        ox -= ovx * (float) (speed * dt);
+                        ovx = -ovx;
+                    }
+                    float gx = ox - center(v);
+                    v.lookX = Math.abs(gx) < 6 * d ? 0 : gx > 0 ? 1 : -1;
+                    v.lookY = 1;
+                    if (speed <= 0) { // tips over
+                        phase = 2;
+                        mark = t;
+                        side = rng.nextBoolean() ? 1 : -1;
+                        v.surpriseFor = 0.4;
+                        maybeSay(v, "TOP_FALL", 0.35);
+                    }
+                } else { // lying on its side
+                    float gx = ox - center(v);
+                    v.lookX = Math.abs(gx) < 6 * d ? 0 : gx > 0 ? 1 : -1;
+                    v.lookY = 1;
+                    if (t - mark > 1.4) {
+                        if (rollsLeft > 0) { // picks it up and spins it again
+                            rollsLeft--;
+                            phase = 0;
+                            mark = t + span(0.6, 6);
+                        } else {
+                            end(v);
+                        }
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
             case PEN: {
                 boolean h = spinHand;
                 v.lookX = h ? 1 : -1;
@@ -4297,6 +4368,28 @@ final class Fun {
                     drawBmp(c, b, sx(v, handPx(v, right) - 2), sy(v, handPy(v, right) - 4, lift), S, 255);
                 } else {
                     drawBmp(c, b, ox - 2.5f * S, oy - 2.5f * S, S, 255);
+                }
+                break;
+            }
+            case TOP: {
+                if (phase == 0) { // in his hand
+                    Bitmap inHand = bmp("TOP" + topColor + "_0_0", Props.topRows(topColor, 0, 0))[0];
+                    drawBmp(c, inHand, sx(v, handPx(v, right) - 4), sy(v, handPy(v, right) - 5, lift), S, 255);
+                    break;
+                }
+                int stripe = 0, tilt = 0;
+                if (phase == 1) {
+                    stripe = ((int) Math.floor(spinAngle)) & 1;
+                    double speed = Math.max(0, 1 - (v.t - mark) / gap);
+                    if (speed < 0.3) { // wobbles more and more as it slows
+                        tilt = (int) Math.round(Math.sin(v.t * (6 + 10 * speed)) * 2 * (0.3 - speed) / 0.3);
+                    }
+                }
+                Bitmap[] b = bmp("TOP" + topColor + "_" + stripe + "_" + tilt, Props.topRows(topColor, stripe, tilt));
+                if (phase == 2) { // on its side: turned, so it's 5 wide and the tip points one way
+                    drawBmp(c, b[side > 0 ? 2 : 3], ox - 2.5f * S, v.floorY - 7 * S, S, 255);
+                } else {
+                    drawBmp(c, b[0], ox - 4.5f * S, v.floorY - 5 * S, S, 255);
                 }
                 break;
             }

@@ -47,6 +47,39 @@ final class Props {
         return new int[]{a, b};
     }
 
+    // ================= spinning top =================
+
+    /**
+     * A spinning top in colour pair `pair`: 9 wide (room to lean) and 5 tall. A grey handle, a body of
+     * light and dark stripes, a black tip. stripe (0 or 1) swaps the stripes, so they turn as it spins;
+     * tilt (-2 to 2) leans it over from the tip, for the wobble before it falls.
+     */
+    static String[] topRows(int pair, int stripe, int tilt) {
+        char light = light(pair), dark = PAIRS[pair].charAt(1);
+        int[] half = {0, 1, 2, 1, 0};
+        String[] rows = new String[5];
+        for (int r = 0; r < 5; r++) {
+            int shift = tilt * (4 - r) / 4;
+            char[] row = new char[9];
+            for (int x = 0; x < 9; x++) {
+                row[x] = '.';
+            }
+            for (int x = -half[r]; x <= half[r]; x++) {
+                char ch;
+                if (r == 0) {
+                    ch = 'h';
+                } else if (r == 4) {
+                    ch = 'o';
+                } else {
+                    ch = ((x + stripe) & 1) == 0 ? light : dark;
+                }
+                row[4 + x + shift] = ch;
+            }
+            rows[r] = new String(row);
+        }
+        return rows;
+    }
+
     // ================= balls =================
 
     static final String[] PATTERNS = {"plain", "striped", "two-tone", "spotty", "beach", "checkered", "banded"};

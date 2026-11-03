@@ -1,0 +1,4 @@
+# batch files need Windows line endings to run reliably
+*.cmd text eol=crlf
+*.exe binary
+*.apk binary

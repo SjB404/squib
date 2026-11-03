@@ -1395,6 +1395,47 @@ final class Lines {
             "close.",
             "the bin moved.",
             "*looks at it*"};
+    static String[] TOP = {
+            "spinning top.",
+            "*spins the top*",
+            "it's still going.",
+            "good spin on that one.",
+            "*watches it spin*",
+            "one more spin."};
+    static String[] TOP_FALL = {
+            "it fell over.",
+            "and it's down.",
+            "*watches it tip over*",
+            "that one went a while."};
+    static String[] FOCUS_START = {
+            "focus timer on. 25 minutes.",
+            "25 minutes, starting now.",
+            "timer's running. i'll be quiet.",
+            "ok. 25 minutes."};
+    static String[] FOCUS_DONE = {
+            "25 minutes. that's the timer.",
+            "timer's done.",
+            "*ding* 25 minutes.",
+            "that's 25 minutes."};
+    static String[] FOCUS_STOP = {
+            "timer off.",
+            "ok, stopped the timer.",
+            "timer cancelled."};
+    static String[] CURSOR = {
+            "the cursor's back.",
+            "*watches the cursor*",
+            "hi, cursor.",
+            "the cursor's been here a while.",
+            "*looks at the cursor*"};
+    static String[] ZOOM = {
+            "that cursor moved fast.",
+            "the cursor's in a hurry.",
+            "*follows the cursor*",
+            "zoom."};
+    static String[] GOODBYE = {
+            "bye. open squib again whenever.",
+            "ok. bye.",
+            "see you."};
 
     /** A line group by name, or null if there's no such group. */
     static String[] get(String name) {

@@ -1,27 +1,46 @@
 # squib
 
-Squib, the pixel squid that lives on your phone, and everything he says.
+Squib, the pixel squid that lives on your phone and your computer, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.19.0). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
-- **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
-- **The app's code:** `app/`, a normal Android project.
+- **Get the phone app:** [apk/Squib.apk](apk/Squib.apk) (version 1.19.0). The version is shown under his name at the top of his settings, and in the line at the bottom. It installs over earlier versions.
+- **Get the Windows app:** [desktop/Squib.exe](desktop/Squib.exe) (version 1.19.0, the same). Put it anywhere and run it: nothing to install. See [Squib on Windows](#squib-on-windows).
+- **His lines:** `squib.json`. Both apps download it from here, so edits show up without a new app.
+- **The code:** `app/` is the phone app, a normal Android project. `desktop/` is the Windows app, which runs the phone app's own code (see [One squid, two apps](#one-squid-two-apps)).
 
 ## Updating his lines
 
-The app downloads `squib.json` from this repo when it starts and every 6 hours after that. It keeps a copy on the phone, so it still works offline. To check right away, open squib's settings and tap "check now". GitHub can take up to about 5 minutes to serve a new version of the file.
+Both apps download `squib.json` from this repo when they start and every 6 hours after that. They keep a copy (on the phone, or in `%APPDATA%\Squib` on Windows), so they still work offline. To check right away: on the phone, open squib's settings and tap "check now"; on Windows, right-click him and click the "lines: ..." row in his menu. GitHub can take up to about 5 minutes to serve a new version of the file.
 
-The same lines are also built into the app (`tools/gen_lines.py` copies them in at build time), so he has them on first start and offline.
+The same lines are also built into both apps (`tools/gen_lines.py` copies them into the phone app, `desktop/build.cmd` into the Windows app), so he has them on first start and offline.
 
-## Building the app
+## Building
 
-Two ways, same result:
+One command per app. Each one builds from the same code and the same `squib.json`.
+
+**Phone (Android).** Two ways, same result:
 
 - **With Android Studio or the Android SDK:** `./gradlew assembleDebug`. The APK lands in `app/build/outputs/apk/debug/`.
 - **Without the Android SDK:** `tools/build-apk.sh`. Needs Java 17+, python3, curl and unzip. Writes `apk/Squib.apk`.
 
 Both sign with `signing/squib-debug.keystore`, the key every Squib build has used, so a new build installs over the one on your phone without losing his stats. It's a public debug key: fine for sideloading, not for the Play Store.
 
-`tools/sim/run.sh` runs squib on a computer with no phone: `sheets` draws a picture of every activity into `build/sim/`, `stress 8` simulates 8 hours of random use and fails on any crash, and `picks` runs every activity and version the picker offers.
+**Windows:** `desktop\build.cmd`. Needs nothing installed: it uses the C# compiler that comes with Windows (.NET Framework 4). Writes `desktop\Squib.exe`. If Squib is running from that file, quit him first (`desktop\Squib.exe --quit`, or "goodbye" in his menu), or Windows won't let the new one be written.
+
+**Trying things without a phone:**
+
+- `tools/sim/run.sh` (Java 17+): `sheets` draws a picture of every activity into `build/sim/`, `stress 8` simulates 8 hours of random use and fails on any crash, and `picks` runs every activity and version the picker offers.
+- `desktop\Squib.exe --sim sheets`, `--sim stress 8` and `--sim picks` do the same with the Windows build (no Java needed), writing to `desktop\build\sim\` (`sim.txt` has the results). `--sim sheets MENU` also draws his Windows menu.
+
+## One squid, two apps
+
+Everything squib does (walking, talking, all the activities and fidgets, his props and their versions, Minecraft gear, hats, bedtime, app modes, the line picker) is the phone app's Java in `app/src/main/java/com/squib/buddy`. The Windows app doesn't have its own copy: `desktop\build.cmd` first runs `desktop/port`, which turns that Java into C# in `desktop/gen` (`SquibView`, `Fun`, `Art`, `Props`, `Pick`, `PixelFont`, plus `Lines` from `squib.json` and the version number from `app/build.gradle`), then builds it together with the Windows parts in `desktop/src`. So:
+
+- **A change to squib, made once in the Java, shows up in both apps** the next time each is built. Bump the version in `app/build.gradle` and both apps get it.
+- **What's only on one platform stays out of the shared code.** Android's side: the overlay service, settings screen, notification and usage access (`SquibService`, `MainActivity`, `Apps`, `Remote`, `Pause`). Windows' side: the window, mouse, menu, tray icon, app modes for Windows, Minecraft's hotbar and the focus timer (`desktop/src`). Small differences inside the shared code (where his floor is, his eyes following the cursor, the greeting's wording) are hooks listed in `desktop/port/patches.txt`.
+- `desktop/src/Java.cs` and `desktop/src/Android.cs` stand in for the bits of Java and Android the engine uses, with the same behaviour (Java's rounding, its random number generator, its string hashes, Android's drawing).
+- **If the port fails,** it says why. Usually a patch in `desktop/port/patches.txt` no longer matches because the Java around it changed: update the patch's text to match the new `desktop/gen` output. Never edit `desktop/gen` by hand: it's rewritten on every build (and not committed).
+
+The port understands the plain Java squib is written in. Keep to it: Java 8, no lambdas or method references (the phone's build tool can't handle them either), and avoid anonymous classes (the one in `Pick` is a patch).
 
 ## squib.json
 
@@ -46,7 +65,7 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 
 ### lines
 
-There are 1181 lines in 134 groups. His tone is neutral and dry: plain observations, not rude, not preachy, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1274 lines in 152 groups. His tone is neutral and dry: plain observations, not rude, not preachy, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -56,17 +75,17 @@ There are 1181 lines in 134 groups. His tone is neutral and dry: plain observati
 | MORNING, AFTERNOON, EVENING, NIGHT | random chatter, depending on time of day |
 | OPENERS | sometimes stuck in front of chatter ("hm. ", "ok so, ") |
 | PARTY, WINTER, SPOOKY | extra chatter on special days, in December, and Oct 20 to 31 |
-| BOOP | when tapped |
-| SPAM | when tapped 5 times fast |
+| BOOP | when tapped (clicked, on Windows) |
+| SPAM | when tapped or clicked 5 times fast |
 | GRABBED | when picked up |
 | PET | when petted |
-| WAKE | when you turn the screen back on after a while |
+| WAKE | when you turn the screen back on after a while (on Windows: when you come back after 10+ minutes away) |
 | FED, HUNGRY | after eating, and when he hasn't eaten in hours |
-| BREAK | after 50 minutes of phone use |
+| BREAK | after 50 minutes of phone (or computer) use |
 | LATE | bedtime nagging, the hour before bedtime and its first hour (11pm to 1am by default) |
 | LATE_NIGHT | bedtime nagging after that, up to 5 hours into bedtime (1am to 5am by default) |
 | BEDTIME | when he goes to sleep for the night |
-| WOKE_NAG | when he wakes up at night to tell you to go to bed, or when the screen comes back on at night |
+| WOKE_NAG | when he wakes up at night to tell you to go to bed, or when the screen comes back on (or you come back to the computer) at night |
 | WATCH_ENTER, WATCH, WATCH_LONG | video apps (WATCH_LONG: after 2 hours) |
 | MUSIC_ENTER, MUSIC | music apps |
 | SCROLL, SCROLL_LONG | scrolling apps. SCROLL_LONG is said every `scrollCheckMinutes` (15) of scrolling, going through the lines in order and starting over at the end. `{mins}` becomes how long you've been scrolling |
@@ -78,7 +97,10 @@ There are 1181 lines in 134 groups. His tone is neutral and dry: plain observati
 | ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
 | one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
 | one group per fidget (STRETCH, SPINNER, HICCUP, ...) | sometimes, when he does that fidget |
-| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP, DICE_SIX, DICE_ONE, FUNNY_CAT, FUNNY_PIGEON, FUNNY_TOAST, FUNNY_CAR, FUNNY_DOG, FUNNY_RACCOON, FUNNY_PLANT | moments during activities. MAIL_READ is what the letter says |
+| FOCUS_START, FOCUS_DONE, FOCUS_STOP | Windows only: the 25-minute focus timer starts, finishes, or is stopped |
+| CURSOR, ZOOM | Windows only: the cursor hangs around near him, or flies across the screen |
+| GOODBYE | Windows only: "goodbye" in his menu |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP, DICE_SIX, DICE_ONE, TOP_FALL, FUNNY_CAT, FUNNY_PIGEON, FUNNY_TOAST, FUNNY_CAR, FUNNY_DOG, FUNNY_RACCOON, FUNNY_PLANT | moments during activities. MAIL_READ is what the letter says |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
@@ -93,18 +115,33 @@ Apps where he gets his Minecraft gear. Anything listed here also counts as a gam
 
 Adds apps to a type. These get added on top of the built-in list. Types: `WATCH`, `MUSIC`, `SCROLL`, `CHAT`, `GAME`, `NAV`, `READ`, `HIDE`. To find an app's name, open its Play Store page: it's the part after `id=` in the link.
 
+### desktopApps
+
+The same for Windows, where things are programs or browser tabs instead of apps. Optional; the phone app ignores it.
+
+```json
+"desktopApps": {
+  "WATCH": ["vlc", "title:Netflix"],
+  "SCROLL": ["title:Hacker News"]
+}
+```
+
+A plain name is a program, as Task Manager's Details tab shows it, without `.exe` (any case). `title:` is a bit of a browser tab's title (any case). These go on top of the built-in lists in [App modes on Windows](#app-modes-on-windows), and a `title:` here is checked before the built-in ones.
+
 ## Pausing
 
-His notification has **hide**, **feed** and **pause**. Some apps refuse taps while anything is drawn over them, even with click-through on. **pause** stops him completely (nothing left on screen) and leaves a "squib is paused" notification with **start** and **stop**.
+On the phone, his notification has **hide**, **feed** and **pause**. Some apps refuse taps while anything is drawn over them, even with click-through on. **pause** stops him completely (nothing left on screen) and leaves a "squib is paused" notification with **start** and **stop**.
 
 - **come back after a pause** (on by default): he starts again by himself after **pause for** minutes (5 by default, 1 minute to 3 hours, both in his settings). The notification says what time.
 - Off: he waits until you press **start** in that notification, or start him from the app.
 - **stop** in the paused notification cancels the pause and removes the notification, so he stays off.
 - If Android won't let him start in the background, the notification changes to say so, and **start** still works.
 
+On Windows, **pause...** in his menu hides him for 5, 15 or 30 minutes, 1 or 3 hours, or until you open Squib.exe again, and the tray icon has **pause for 15 minutes** / **unpause**. Clicking the tray icon also brings him back.
+
 ## Modes
 
-He switches mode based on the app you have open. This needs usage access turned on, and the "app modes" switch in his settings. Switching into a mode (other than HIDE) has a 30% chance of a `<MODE>_ENTER` line, at most once per 10 minutes per mode.
+He switches mode based on the app you have open. This needs usage access turned on, and the "app modes" switch in his settings. On Windows he goes by the window in front (the program, or the page in a browser) instead: see [App modes on Windows](#app-modes-on-windows). Switching into a mode (other than HIDE) has a 30% chance of a `<MODE>_ENTER` line, at most once per 10 minutes per mode.
 
 Bedtime nagging and the 50-minute break reminder happen in every mode except HIDE.
 
@@ -276,7 +313,7 @@ He doesn't do activities while watching videos (he has popcorn), in hidden apps,
 
 ### Fidgets
 
-Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, TOSS or SPRING. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP and SPRING can go on for minutes. Since 1.19.0, TEXT isn't a random fidget any more: he only texts in messaging apps, or when you pick it in his settings.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, TOSS, SPRING or TOP. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, SPRING and TOP can go on for minutes. Since 1.19.0, TEXT isn't a random fidget any more: he only texts in messaging apps, or when you pick it in his settings.
 
 - **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
 - **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
@@ -288,6 +325,7 @@ Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` 
 - **TEXT:** the same texting as in chat apps, from a few seconds to a couple of minutes, only when picked in his settings (1.19.0). He doesn't say anything when it starts: the message bubbles are his talking.
 - **TOSS:** scrunches up a piece of paper and throws it at a bin on the floor a little way off (bin in a random colour). It goes in (happy) or lands next to it (annoyed), 1 to about 8 throws. Bottom of the screen only. Lines: TOSS, TOSS_IN, TOSS_MISS.
 - **SPRING (1.19.0):** pours a spring toy from one hand to the other, the rings arching over his head, then back, since it's upside down now. Colours are picked each time: one colour, two colours striped, a run of colours, or gold or silver. Now and then it slips halfway over, the rings fall to the floor, and he looks annoyed. A few seconds to a few minutes. Lines: SPRING.
+- **TOP:** winds up a spinning top (any of the 11 colours) and lets it go on the floor in front of him (behind him if he's at the edge of the screen). Its stripes turn as it spins, it drifts about, bumping off him and the edges, and it wobbles more and more as it slows down, then tips onto its side. He watches it the whole time. Spins last from 3 seconds to about 40, and he often picks it up and spins it again, up to 8 times.
 
 ## Minecraft
 
@@ -310,3 +348,104 @@ In Minecraft (and the launchers in the `minecraft` list) he gets diamond gear. O
 - **December:** winter hat, snow falling around him (not on clouds or while watching), and WINTER lines.
 - **October 20 to 31:** witch hat and SPOOKY lines.
 - Hats come off in Minecraft (he wears the diamond helmet instead).
+
+## Squib on Windows
+
+The same squid as on the phone. Everything above works the same, because it's the same code: activities, fidgets, versions and the pickers, Minecraft gear, special days and hats, bedtime, app modes, his lines and how they're picked. His stats and settings belong to each device; the phone and the computer don't share them.
+
+Run `desktop\Squib.exe` (from anywhere). Only one Squib runs at a time.
+
+### Where he lives
+
+He walks along the top of the taskbar (the bottom of the main screen's free area, wherever the taskbar is), on top of every window. His window never takes focus, so he doesn't interrupt typing or games, and clicks go straight through the empty space around him. While Minecraft is open he stands on its hotbar instead (see [Minecraft on Windows](#minecraft-on-windows)).
+
+### Mouse
+
+| do this | and he |
+|---|---|
+| click him | boop: a BOOP line or a heart |
+| double-click him | jets off in a cloud of ink |
+| click him 5 times fast | gets annoyed (SPAM) and inks |
+| drag him | picks him up (GRABBED). Let go to drop or throw him; he drifts down |
+| wiggle the cursor over him, or hold the button down on him | petting: hearts, a blush and a PET line |
+| click his speech bubble | closes it |
+| right-click him | his menu |
+
+His eyes follow the cursor while he's standing around. If the cursor stays near him for a few seconds he may say a CURSOR line, and if it flies across the screen, a ZOOM line (only on the desktop or other HOME windows, when he's not busy, and at most every 25 to 105 seconds).
+
+### His menu
+
+Right-click him (or click the tray icon). Click anywhere else, or press Esc, to close it.
+
+- **header:** his day count, shrimp eaten, and the version (always the same as the phone app's)
+- **feed a shrimp:** a shrimp floats down; he walks over and eats it (FED)
+- **talk:** a fact, a joke or a thought
+- **do a trick:** an activity right now. In Minecraft: he mines a block of ore or places a torch
+- **pick a trick... / pick a fidget...:** everything he can do, like the pickers on the phone. Ones marked `...` have versions: pick one, or "random"
+- **start 25-min focus:** says a FOCUS_START line, then keeps quiet (no chatter) and shows the time left over his head. At the end: a FOCUS_DONE line and hearts, and the 50-minute break timer starts over. Click it again to stop early (FOCUS_STOP)
+- **pause...:** see [Pausing](#pausing)
+- **size** (small, medium, large) and **text size** (small, medium, large, for his speech bubbles and this menu): click to change
+- **app modes:** on, he changes what he does with the window in front ([App modes on Windows](#app-modes-on-windows)). Off, he acts as if you're on the desktop all the time
+- **walk on minecraft's hotbar**
+- **chatty:** off, he doesn't talk on his own (no chatter, activity lines, mode lines or cursor lines). He still answers when you click, pet or feed him, and still does reminders
+- **break reminders and check-ins:** the 50-minute BREAK reminder and the SCROLL_LONG check-ins
+- **click-through:** clicks go straight through him, like he isn't there. Use the tray icon to get his menu back
+- **start with windows:** starts him when you sign in (a normal startup entry, also listed in Task Manager's startup apps)
+- **lines:** where his lines came from and when (built in, saved copy, or updated at a time). Click to check GitHub now
+- **goodbye:** a GOODBYE line, a wave, and he fades out and quits
+
+### Tray icon
+
+His face in the notification area. Left-click: his menu (or unpause him). Right-click: squib's menu, feed a shrimp, talk, do a trick, pause for 15 minutes / unpause, click-through, goodbye.
+
+### When you're away
+
+No mouse or keyboard for 3 minutes and he lies down for a nap. Coming back counts like turning the phone's screen back on: he gets up, after 10+ minutes away he may say a WAKE line (at bedtime, a WOKE_NAG line), and after 5+ minutes away the 50-minute break timer starts over. Bedtime (midnight to 5am) works the same as on the phone.
+
+### Minecraft on Windows
+
+When Minecraft (Java Edition, or Bedrock from the Microsoft Store) is open and not minimised, and no other window is in front of its hotbar, he walks along the top of the hotbar instead of the taskbar. He works out where the hotbar is the same way Minecraft does, from the window's size and the GUI scale in the game's `options.txt` (from its `--gameDir`, or the usual `.minecraft` folder), so nothing reads the screen. `Squib.exe --find-hotbar` writes what he works out to `%TEMP%\squib-hotbar.txt`, for checking.
+
+There he gets his diamond gear and does everything in [Minecraft](#minecraft-1) (needs **app modes** on). With **walk on minecraft's hotbar** off he stays on the taskbar; when Minecraft is the window in front he sits on a cloud like in other games, still with his gear.
+
+### App modes on Windows
+
+Once a second he looks at the window in front of everything:
+
+1. In a **browser** (Chrome, Edge, Firefox, Brave, Opera, Vivaldi, Arc, Chromium, LibreWolf, Waterfox, Floorp, Zen), the page's title decides, so X, Reddit or YouTube in a tab count like their apps on the phone. A fullscreen browser on any other page counts as WATCH.
+2. Other **programs** go by their name.
+3. Anything else **fullscreen** counts as a game.
+4. The desktop, the taskbar and everything else: HOME.
+
+Minecraft is GAME, with his gear. Each mode does what it does on the phone (see [Modes](#modes)), with two changes so he stays out of the way: the perches are up top a quarter of the way in from the left (games) or the right (chat, maps, reading) instead of in the corners, so he never sits on a window's close button, and WATCH sits him in the bottom-right corner above the taskbar.
+
+| mode | browser tab titles with | programs |
+|---|---|---|
+| MUSIC | YouTube Music, Spotify, SoundCloud, Apple Music, Deezer, TIDAL, Bandcamp, Pandora | Spotify, iTunes, Apple Music, foobar2000, MusicBee, AIMP, Winamp, TIDAL, Deezer, Amazon Music, Groove Music, Audacious, Plexamp |
+| HIDE | Google Meet, "Meet - ", Zoom Meeting | Zoom, Zoom screen sharing (CptHost), Camera, PowerPoint, the lock screen, the Snipping Tool |
+| WATCH | YouTube, Netflix, Twitch, Disney+, Prime Video, Hulu, Crunchyroll, Plex, Paramount+, Peacock, BBC iPlayer, Channel 4, Pluto TV, Tubi, Apple TV, Vimeo, Dailymotion | VLC, MPC-HC, MPC-BE, PotPlayer, Windows Media Player, Media Player, Films & TV, Plex, mpv, Netflix, Disney+, Prime Video, Stremio, Kodi |
+| SCROLL | X (" / X", "on X:"), Twitter, Reddit (": r/"), Instagram, TikTok, Facebook, Threads, Bluesky, Tumblr, Pinterest, LinkedIn, 9GAG, Imgur, Lemon8 | |
+| CHAT | WhatsApp, Discord, Messenger, Telegram, Gmail, Outlook, Slack, Microsoft Teams | Discord, Slack, Teams, Telegram, WhatsApp, Signal, Outlook (new and classic), Thunderbird, Element, Messenger, Skype, Viber, LINE |
+| NAV | Google Maps, Bing Maps, OpenStreetMap, Citymapper | |
+| READ | Kindle, Wattpad, Duolingo, Wikipedia, Google Books, AO3 / Archive of Our Own | Kindle, Adobe Reader and Acrobat, SumatraPDF, calibre |
+| GAME | | Minecraft, Roblox, Fortnite, League of Legends, Valorant, Counter-Strike 2, Dota 2, GTA V, Rocket League, Overwatch, Genshin Impact, Honkai: Star Rail, Elden Ring, Terraria, Among Us, Rainbow Six, Apex Legends, Fall Guys, Palworld, and anything fullscreen |
+
+Titles are checked in the order of the table, so "YouTube Music" is music, not watching. Add your own in `squib.json` ([desktopApps](#desktopapps)).
+
+### Files
+
+All in `%APPDATA%\Squib`:
+
+- `prefs.txt`: his stats and settings. The first time this version runs, it copies the stats and settings from `memory.txt` (the first Windows Squib's file), which it leaves as it was.
+- `squib.json`: the last lines downloaded from GitHub.
+- `crash.txt`: only if he ever crashes, with why.
+
+### Command line
+
+| | |
+|---|---|
+| `Squib.exe` | starts him. If he's already running: brings him back from a pause (or he says hi) |
+| `Squib.exe --quit` | closes the running Squib, saving his stats |
+| `Squib.exe --find-hotbar` | see [Minecraft on Windows](#minecraft-on-windows) |
+| `Squib.exe --demo` | goes through talk, feed, a fidget spinner and his menu in the first 30 seconds, for checking how they look |
+| `Squib.exe --sim ...` | runs him with a fake clock and no window: see [Building](#building) |

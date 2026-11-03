@@ -1537,6 +1537,55 @@
       "close.",
       "the bin moved.",
       "*looks at it*"
+    ],
+    "TOP": [
+      "spinning top.",
+      "*spins the top*",
+      "it's still going.",
+      "good spin on that one.",
+      "*watches it spin*",
+      "one more spin."
+    ],
+    "TOP_FALL": [
+      "it fell over.",
+      "and it's down.",
+      "*watches it tip over*",
+      "that one went a while."
+    ],
+    "FOCUS_START": [
+      "focus timer on. 25 minutes.",
+      "25 minutes, starting now.",
+      "timer's running. i'll be quiet.",
+      "ok. 25 minutes."
+    ],
+    "FOCUS_DONE": [
+      "25 minutes. that's the timer.",
+      "timer's done.",
+      "*ding* 25 minutes.",
+      "that's 25 minutes."
+    ],
+    "FOCUS_STOP": [
+      "timer off.",
+      "ok, stopped the timer.",
+      "timer cancelled."
+    ],
+    "CURSOR": [
+      "the cursor's back.",
+      "*watches the cursor*",
+      "hi, cursor.",
+      "the cursor's been here a while.",
+      "*looks at the cursor*"
+    ],
+    "ZOOM": [
+      "that cursor moved fast.",
+      "the cursor's in a hurry.",
+      "*follows the cursor*",
+      "zoom."
+    ],
+    "GOODBYE": [
+      "bye. open squib again whenever.",
+      "ok. bye.",
+      "see you."
     ]
   },
   "apps": {
