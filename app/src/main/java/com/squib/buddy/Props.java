@@ -270,6 +270,41 @@ final class Props {
         return out;
     }
 
+    // ================= dice =================
+
+    static final String[] DIE_COLORS = {"wq", "rR", "eo", "mM", "gG", "yY", "uU"};
+    static final String[] DIE_NAMES = {"white", "red", "black", "blue", "green", "yellow", "purple"};
+
+    /** A 5-pixel die showing face 1 to 6. */
+    static String[] dieRows(int color, int face) {
+        char body = DIE_COLORS[color].charAt(0), shade = DIE_COLORS[color].charAt(1);
+        char pip = body == 'w' || body == 'y' ? 'o' : 'w';
+        char[][] g = new char[5][5];
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 5; x++) {
+                boolean corner = (x == 0 || x == 4) && (y == 0 || y == 4);
+                g[y][x] = corner ? '.' : (y == 4 || x == 4) ? shade : body;
+            }
+        }
+        int[][] pips;
+        switch (face) {
+            case 1: pips = new int[][]{{2, 2}}; break;
+            case 2: pips = new int[][]{{1, 1}, {3, 3}}; break;
+            case 3: pips = new int[][]{{1, 1}, {2, 2}, {3, 3}}; break;
+            case 4: pips = new int[][]{{1, 1}, {3, 1}, {1, 3}, {3, 3}}; break;
+            case 5: pips = new int[][]{{1, 1}, {3, 1}, {2, 2}, {1, 3}, {3, 3}}; break;
+            default: pips = new int[][]{{1, 1}, {3, 1}, {1, 2}, {3, 2}, {1, 3}, {3, 3}};
+        }
+        for (int[] p : pips) {
+            g[p[1]][p[0]] = pip;
+        }
+        String[] out = new String[5];
+        for (int y = 0; y < 5; y++) {
+            out[y] = new String(g[y]);
+        }
+        return out;
+    }
+
     // ================= puzzle cube =================
 
     /**

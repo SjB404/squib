@@ -58,6 +58,9 @@ public final class MainActivity extends Activity {
         TextView sub = label("your little pixel buddy, now in your phone", 14, MUTED, false);
         sub.setGravity(17);
         root.addView(sub);
+        TextView ver = label("version " + version(), 12, MUTED, false);
+        ver.setGravity(17);
+        root.addView(ver);
 
         heading(root, "setup");
         overlayStatus = label("", 14, CREAM, false);
@@ -222,7 +225,7 @@ public final class MainActivity extends Activity {
         sizeButton.setText("size: " + SIZE_NAMES[prefs.getInt("size", 2) - 2] + "   (tap to change)");
         textButton.setText("text size: " + SIZE_NAMES[prefs.getInt("textSize", 1)] + "   (tap to change)");
         long today = System.currentTimeMillis() / 86400000L;
-        stats.setText("day " + ((today - prefs.getLong("born", today)) + 1) + "  ·  " + prefs.getInt("fed", 0) + " shrimp eaten  ·  "
+        stats.setText("squib " + version() + "  ·  day " + ((today - prefs.getLong("born", today)) + 1) + "  ·  " + prefs.getInt("fed", 0) + " shrimp eaten  ·  "
                 + prefs.getInt("boops", 0) + " boops  ·  " + prefs.getInt("pets", 0) + " pets");
         Remote.refreshRow(this);
     }
@@ -237,6 +240,14 @@ public final class MainActivity extends Activity {
         i = Math.max(0, Math.min(Pause.MINUTES.length - 1, i + dir));
         prefs.edit().putInt("pauseMinutes", Pause.MINUTES[i]).apply();
         refresh();
+    }
+
+    String version() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "?";
+        }
     }
 
     static String mark(boolean ok) {

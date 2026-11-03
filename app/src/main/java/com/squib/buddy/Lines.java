@@ -1329,6 +1329,23 @@ final class Lines {
             "best twelve cents anyone ever spent.",
             "*squeezes like it owes me money*",
             "if this pops, it's your fault."};
+    static String[] DICE = {
+            "*shakes die*",
+            "come on. six.",
+            "let's see how unlucky i am today.",
+            "fate, but cheaper.",
+            "rolling. don't watch.",
+            "one more roll. then another."};
+    static String[] DICE_SIX = {
+            "six. obviously.",
+            "six. i'm unstoppable.",
+            "six. write that down.",
+            "six. the die fears me."};
+    static String[] DICE_ONE = {
+            "one. of course.",
+            "one. this die is rigged.",
+            "a one. typical.",
+            "one. i want a refund."};
     static String[] BEDTIME = {
             "ok. i'm going to sleep. you should too, but you won't.",
             "bedtime. phone down. i'm not asking twice. i'll ask later though.",

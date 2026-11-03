@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.10). It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.11). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -47,7 +47,7 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 
 ### lines
 
-There are 1217 lines in 122 groups. His tone is dry and sarcastic, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1231 lines in 125 groups. His tone is dry and sarcastic, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -79,7 +79,7 @@ There are 1217 lines in 122 groups. His tone is dry and sarcastic, not cute. Eac
 | ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
 | one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
 | one group per fidget (STRETCH, SPINNER, HICCUP, ...) | sometimes, when he does that fidget |
-| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP | moments during activities. MAIL_READ is what the letter says |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP, DICE_SIX, DICE_ONE | moments during activities. MAIL_READ is what the letter says |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
@@ -262,11 +262,12 @@ He doesn't do activities while watching videos (he has popcorn), in hidden apps,
 
 ### Fidgets
 
-Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN or STRESSBALL. He only says something about 1 time in 8. SPINNER, COIN and STRESSBALL can go on for minutes.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL or DICE. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL and DICE can go on for minutes.
 
 - **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
 - **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
 - **STRESSBALL:** squeezes a stress ball (any ball pattern and colours), squashing it flatter the harder he squeezes, with an annoyed face. Sometimes tosses it over his head to the other hand.
+- **DICE:** shakes a die (white, red, black, blue, green, yellow or purple) and throws it on the floor in front of him. It tumbles and bounces, then he looks at what he rolled: happy at a six, annoyed at a one. Up to about 10 rolls in a row.
 
 ## Minecraft
 

@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 39,
             // quick fidgets (their own timer)
             STRETCH = 40, SPIN = 41, TRIP = 42, SCRATCH = 43, YAWN = 44, SPINNER = 45, HICCUP = 46, SHAKE = 47,
-            WHISTLE = 48, COIN = 49, STRESSBALL = 50,
+            WHISTLE = 48, COIN = 49, STRESSBALL = 50, DICE = 51,
             FIRST_FIDGET = 40;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,18 +43,18 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH,
             ANY, FLOOR, ANY, ANY, ANY, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
             ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2, 5, 1, 2, 2, 2, 25,
             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6};
+            3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -123,6 +123,7 @@ final class Fun {
     static double spinToss = -1, nextFlick, sessionEnd;
     static final ArrayList<int[]> pendingSolve = new ArrayList<int[]>();
     static int squeeze;
+    static int dieColor, dieFace = 6, rollsLeft;
     static int[] hulaColors = {4, 1};
     static int[] blockColors = {0, 1, 2, 3};
     static int yoyoColor = 4;
@@ -390,6 +391,7 @@ final class Fun {
             case SPINNER: return "fidget spinner";
             case COIN: return "coin flip";
             case STRESSBALL: return "stress ball";
+            case DICE: return "dice";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -413,6 +415,7 @@ final class Fun {
             case CUBE: return new String[]{"solves it", "speed solve", "2x2 cube", "gives up", "messes it up"};
             case COIN: return new String[]{"gold", "silver", "copper", "drops it"};
             case STRESSBALL: return Props.PATTERNS;
+            case DICE: return Props.DIE_NAMES;
             default: return null;
         }
     }
@@ -947,6 +950,14 @@ final class Fun {
                 spinToss = -1;
                 nextFlick = t + 0.3;
                 actEnd = t + span(4, 300); // a few seconds, or minutes of it
+                break;
+            case DICE:
+                dieColor = choose(Props.DIE_COLORS.length);
+                dieFace = 1 + rng.nextInt(6);
+                rollsLeft = (int) span(1, 10) - 1; // rolls after this one
+                mark = t + rand(0.5, 1.2); // shakes it first
+                nextEvent = t;
+                actEnd = t + 900;
                 break;
             case STRESSBALL:
                 ballLook = Props.ballLook(rng, 5, 6, want >= 0 ? want % Props.PATTERNS.length : -1);
@@ -2235,6 +2246,73 @@ final class Fun {
                 }
                 break;
             }
+            case DICE: {
+                if (phase == 0) { // shaking it in his hand
+                    arm(v, right, 1 + ((int) (el * 10)) % 2);
+                    v.lookX = v.facing;
+                    if (t >= nextEvent) {
+                        nextEvent = t + 0.1;
+                        dieFace = 1 + rng.nextInt(6);
+                    }
+                    if (t >= mark) {
+                        phase = 1;
+                        ox = sx(v, handPx(v, right) + 0.5f);
+                        oy = sy(v, handPy(v, right) - 1, v.lift());
+                        ovx = v.facing * (float) rand(25, 55) * d;
+                        ovy = -(float) rand(110, 170) * d;
+                        arm(v, right, 2);
+                        v.kick(1);
+                    }
+                } else if (phase == 1) { // tumbling
+                    arm(v, right, 0);
+                    ovy += 900 * d * f;
+                    ox += ovx * f;
+                    oy += ovy * f;
+                    ox = clamp(ox, 4 * S, v.screenW - 4 * S);
+                    if (t >= nextEvent) {
+                        nextEvent = t + 0.07;
+                        dieFace = 1 + rng.nextInt(6);
+                    }
+                    float gx = ox - center(v);
+                    v.lookX = Math.abs(gx) < 6 * d ? 0 : gx > 0 ? 1 : -1;
+                    v.lookY = 1;
+                    if (oy >= v.floorY - 2.5f * S) {
+                        oy = v.floorY - 2.5f * S;
+                        ovy = -ovy * 0.45f;
+                        ovx *= 0.55f;
+                        if (Math.abs(ovy) < 60 * d) {
+                            phase = 2;
+                            mark = t;
+                            dieFace = 1 + rng.nextInt(6);
+                            if (dieFace == 6) {
+                                v.happyFor = 1.5;
+                                v.hop();
+                                maybeSay(v, "DICE_SIX", 0.5);
+                            } else if (dieFace == 1) {
+                                v.annoyedFor = 1.5;
+                                maybeSay(v, "DICE_ONE", 0.5);
+                            }
+                        }
+                    }
+                } else { // looks at what he rolled
+                    float gx = ox - center(v);
+                    v.lookX = Math.abs(gx) < 6 * d ? 0 : gx > 0 ? 1 : -1;
+                    v.lookY = 1;
+                    if (t - mark > 1.6) {
+                        if (rollsLeft > 0) { // picks it up and goes again
+                            rollsLeft--;
+                            phase = 0;
+                            mark = t + span(0.5, 5);
+                        } else {
+                            end(v);
+                        }
+                    }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
             case STRESSBALL: {
                 boolean h = spinHand;
                 v.lookX = h ? 1 : -1;
@@ -3241,6 +3319,15 @@ final class Fun {
                 float gy = up ? top(v) - 10 : armRow(v) + 1;
                 float wob = phase == 1 && variant == 3 ? (((int) ((v.t - mark) / 0.09)) % 2 == 0 ? -1 : 1) : 0;
                 drawBmp(c, cubeBmp, sx(v, 14 - w / 2 + wob), sy(v, gy, lift), S, 255);
+                break;
+            }
+            case DICE: {
+                Bitmap b = bmp("DIE" + dieColor + "_" + dieFace, Props.dieRows(dieColor, dieFace))[0];
+                if (phase == 0) {
+                    drawBmp(c, b, sx(v, handPx(v, right) - 2), sy(v, handPy(v, right) - 4, lift), S, 255);
+                } else {
+                    drawBmp(c, b, ox - 2.5f * S, oy - 2.5f * S, S, 255);
+                }
                 break;
             }
             case STRESSBALL: {
