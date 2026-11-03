@@ -292,7 +292,7 @@ final class SquibView extends View {
         float f = this.d;
         float f2 = 8.0f * f;
         int i = this.screenW;
-        float f3 = (this.screenH - (i > this.screenH ? 0 : this.navBar)) - (f * 2.0f);
+        float f3 = this.screenH - (i > this.screenH ? 0 : this.navBar); // feet right on top of the nav bar
         float f4 = this.statusBar + (f * 14.0f);
         float f5 = this.S;
         float f6 = f4 + (20.0f * f5);
@@ -484,7 +484,7 @@ final class SquibView extends View {
                 if (this.motion == Motion.CHASE) {
                     float f4 = this.shrimpX;
                     float f5 = this.S;
-                    d2 = clamp(f4 - (14.0f * f5), (-2.0f) * f5, this.screenW - (f5 * 26.0f));
+                    d2 = clamp(f4 - (14.0f * f5), this.minX, this.maxX);
                 } else {
                     d2 = this.targetX;
                 }
@@ -1088,7 +1088,8 @@ final class SquibView extends View {
         }
         float nextFloat = (this.rng.nextBoolean() ? -1 : 1) * ((this.rng.nextFloat() * 60.0f) + 40.0f);
         float f = this.d;
-        this.shrimpX = clamp(this.posX + (this.S * 14.0f) + (nextFloat * f), f * 16.0f, this.screenW - (f * 16.0f));
+        // only where he can actually walk to: his middle can go from minX + 14S to maxX + 14S
+        this.shrimpX = clamp(this.posX + (this.S * 14.0f) + (nextFloat * f), this.minX + (this.S * 14.0f), this.maxX + (this.S * 14.0f));
         this.shrimpY = (this.posY - (this.S * 20.0f)) - (this.d * 120.0f);
         this.shrimpOn = true;
         this.shrimpLanded = false;
@@ -1109,11 +1110,13 @@ final class SquibView extends View {
 
     void talk() {
         double nextDouble = this.rng.nextDouble();
-        say(Pick.one(nextDouble < 0.55d ? Lines.FACTS : nextDouble < 0.8d ? Lines.JOKES : Lines.THOUGHTS), 2.0d);
+        say(Pick.one(nextDouble < 0.3d ? Lines.FACTS : nextDouble < 0.65d ? Lines.JOKES : Lines.THOUGHTS), 2.0d);
     }
 
     void food(double d) {
         if (this.shrimpOn) {
+            // keep it where he can reach it, even if it wobbles toward the edge or his spot changes
+            this.shrimpX = clamp(this.shrimpX, this.minX + (this.S * 14.0f), this.maxX + (this.S * 14.0f));
             if (!this.shrimpLanded) {
                 this.shrimpY = (float) (this.shrimpY + (this.d * 70.0f * d));
                 this.shrimpX = (float) (this.shrimpX + (Math.sin(this.t * 4.0d) * 25.0d * this.d * d));

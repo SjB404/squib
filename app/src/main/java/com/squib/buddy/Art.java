@@ -521,6 +521,99 @@ final class Art {
             "..u.."};
     static final String[] STAR = {".y.", "yyy", ".y."};
 
+    // ---------- funny things he finds on his phone (16 x 12, '.' is the photo's background) ----------
+    static final String[] FUNNY_CAT = {
+            "................",
+            "....Y......Y....",
+            "...YYY....YYY...",
+            "...YYYYYYYYYY...",
+            "...YgoYYYYgoY...",
+            "...YYYYiiYYYY...",
+            "...YYYYYYYYYY...",
+            ".YYkkkkkkkkkkYY.",
+            ".YYkKKKKKKKKkYY.",
+            "..YkkkkkkkkkkY..",
+            "...kkkkkkkkkk...",
+            "...kkkkkkkkkk..."};
+    static final String[] FUNNY_PIGEON = {
+            "................",
+            "........qqq.....",
+            ".......qqqqq....",
+            ".......qqroqhh..",
+            ".......qqqqq....",
+            "......gggqq.....",
+            ".....qqgqqqq....",
+            "...hqqqqqqqqq...",
+            "..hhhqqqqqqqqq..",
+            "...hhhhqqqqqq...",
+            "........i..i....",
+            "SSSSSSSSSSSSSSSS"};
+    static final String[] FUNNY_TOAST = {
+            "................",
+            "....kkkkkkkk....",
+            "...kjjjjjjjjk...",
+            "...kjjjjjjjjk...",
+            "...kjjKjjKjjk...",
+            "...kjjKjjKjjk...",
+            "...kjjjjjjjjk...",
+            "...kjKjjjjKjk...",
+            "...kjjKKKKjjk...",
+            "...kjjjjjjjjk...",
+            "...kkkkkkkkkk...",
+            "................"};
+    static final String[] FUNNY_CAR = {
+            ".w.....w.....w..",
+            ".w.....w.....w..",
+            ".w.....w.....w..",
+            ".w....rrrrrr.w..",
+            ".w...rmmrrmmrw..",
+            ".w..rrrrrrrrrrr.",
+            ".w..RrrrrrrrrrR.",
+            ".w...oow..oo.w..",
+            ".w.....w.....w..",
+            ".w.....w.....w..",
+            ".w.....w.....w..",
+            ".w.....w.....w.."};
+    static final String[] FUNNY_DOG = {
+            "................",
+            "...KK......KK...",
+            "..KKKkkkkkkKKK..",
+            "..KKkkkkkkkkKK..",
+            "...owoooooowooo.",
+            "...kooookooook..",
+            "....kkkkkkkk....",
+            ".....kkookk.....",
+            ".....kkiikk.....",
+            "......kiik......",
+            ".......ii.......",
+            "................"};
+    static final String[] FUNNY_RACCOON = {
+            "................",
+            ".....q....q.....",
+            "....qqq..qqq....",
+            "....qqqqqqqq....",
+            "....oowqqwoo....",
+            "....oooqqooo....",
+            ".....qqooqq.....",
+            "...NNNNNNNNNN...",
+            "...SNSNSNSNSN...",
+            "...SNSNSNSNSN...",
+            "...SNSNSNSNSN...",
+            "...SSSSSSSSSS..."};
+    static final String[] FUNNY_PLANT = {
+            "................",
+            "........K.......",
+            ".......KnK......",
+            "......K.n.K.....",
+            ".....K..n..K....",
+            "........n.......",
+            ".....YYYYYYY....",
+            ".....YRRRRRY....",
+            "......YYYYY.....",
+            "......YYYYY.....",
+            ".......YYY......",
+            "................"};
+
     // ---------- hats ----------
     static final String[] PARTY_HAT = {
             "...w...",

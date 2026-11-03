@@ -30,31 +30,30 @@ final class Fun {
             SKATE = 16, ICECREAM = 17, BALLOON = 18, MAGIC = 19, STARGAZE = 20, SNEEZE = 21, JUMPROPE = 22,
             PAINT = 23, SELFIE = 24, CONFETTI = 25, GUM = 26, CAMPFIRE = 27, DRUMS = 28, HULA = 29,
             BOOMERANG = 30, GARDEN = 31, BOWLING = 32, KARATE = 33, WORKOUT = 34, FRIEND = 35, BLOCKS = 36,
-            MAIL = 37, MEDITATE = 38, CUBE = 39,
-            LAST_ACTIVITY = 39,
+            MAIL = 37, MEDITATE = 38, CUBE = 39, PHONE = 40,
+            LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
-            STRETCH = 40, SPIN = 41, TRIP = 42, SCRATCH = 43, YAWN = 44, SPINNER = 45, HICCUP = 46, SHAKE = 47,
-            WHISTLE = 48, COIN = 49, STRESSBALL = 50, DICE = 51,
-            FIRST_FIDGET = 40;
+            STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52,
+            FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
     static final String[] NAMES = {"NONE", "BALL", "PLANE", "BUBBLES", "BOOK", "YOYO", "DANCE", "WAVE",
             "BUTTERFLY", "NAP", "TEA", "GUITAR", "JUGGLE", "KITE", "FISHING", "RAIN", "SKATE", "ICECREAM",
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
-            "BLOCKS", "MAIL", "MEDITATE", "CUBE",
+            "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
             "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
-    static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH,
-            ANY, FLOOR, ANY, ANY, ANY, FLOOR, ANY, FLOOR, ANY, ANY, ANY,
-            ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+    static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
+            FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
-    static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2, 5, 1, 2, 2, 2, 25,
-            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4};
+    static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
+            5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -124,6 +123,20 @@ final class Fun {
     static final ArrayList<int[]> pendingSolve = new ArrayList<int[]>();
     static int squeeze;
     static int dieColor, dieFace = 6, rollsLeft;
+
+    // ---------- phone: scrolls along with you, shows you funny things ----------
+    static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
+    static final String[] FUNNY_NAMES = {"cat in a box", "judging pigeon", "toast with a face", "bad parking",
+            "dog in sunglasses", "raccoon in a bin", "dead plant"};
+    /** Background colour of each picture, and which colours can be swapped (and to what). */
+    static final String FUNNY_BG = "qmqhmzp";
+    static final String[] FUNNY_FROM = {"Y", "", "", "rR", "kK", "", ""};
+    static final String[][] FUNNY_TO = {{"Y", "q", "e", "w", "k"}, null, null,
+            {"rR", "mM", "gG", "yY", "uU", "wq", "eo"}, {"kK", "yY", "qh", "wq"}, null, null};
+    static boolean autoPhone, showing;
+    static double nextPhoneAt, showAt, showStart, feedOff, scrollVel;
+    static int feedSeed, funny = -1, lastFunny = -1, cardSide = 1;
+    static String funnyTo = "";
     static int[] hulaColors = {4, 1};
     static int[] blockColors = {0, 1, 2, 3};
     static int yoyoColor = 4;
@@ -391,6 +404,7 @@ final class Fun {
             case SPINNER: return "fidget spinner";
             case COIN: return "coin flip";
             case STRESSBALL: return "stress ball";
+            case PHONE: return "phone (shows you something)";
             case DICE: return "dice";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
@@ -415,6 +429,7 @@ final class Fun {
             case CUBE: return new String[]{"solves it", "speed solve", "2x2 cube", "gives up", "messes it up"};
             case COIN: return new String[]{"gold", "silver", "copper", "drops it"};
             case STRESSBALL: return Props.PATTERNS;
+            case PHONE: return FUNNY_NAMES;
             case DICE: return Props.DIE_NAMES;
             default: return null;
         }
@@ -518,6 +533,10 @@ final class Fun {
             start(v, pick(v, kind));
         } else if (t >= nextFidgetAt) {
             start(v, pickFidget(v));
+        } else if (kind == Apps.Kind.SCROLL && t >= nextPhoneAt && !v.perched) {
+            // scrolling apps: he gets his own phone out and scrolls along with you
+            autoPhone = true;
+            start(v, PHONE);
         }
     }
 
@@ -668,12 +687,12 @@ final class Fun {
         count = 0;
         variant = 0;
         boolean quick = a >= FIRST_FIDGET;
-        if (!quick) {
+        if (!quick && !autoPhone) {
             System.arraycopy(recentActs, 0, recentActs, 1, recentActs.length - 1);
             recentActs[0] = a;
         }
         if (a != SNEEZE) {
-            maybeSay(v, NAMES[a], a == WAVE || a == CONFETTI ? 0.8 : quick ? 0.12 : 0.45);
+            maybeSay(v, NAMES[a], a == WAVE || a == CONFETTI ? 0.8 : quick || autoPhone ? 0.12 : 0.45);
         }
         switch (a) {
             case BALL:
@@ -951,6 +970,21 @@ final class Fun {
                 nextFlick = t + 0.3;
                 actEnd = t + span(4, 300); // a few seconds, or minutes of it
                 break;
+            case PHONE:
+                feedSeed = rng.nextInt();
+                feedOff = rng.nextInt(1000);
+                scrollVel = 0;
+                nextEvent = t + rand(0.5, 2);
+                showing = false;
+                funny = want >= 0 ? want % FUNNY.length : -1;
+                if (autoPhone) {
+                    actEnd = t + span(40, 400);
+                    showAt = t + span(20, 240);
+                } else {
+                    actEnd = t + span(15, 150);
+                    showAt = t + rand(3, 8);
+                }
+                break;
             case DICE:
                 dieColor = choose(Props.DIE_COLORS.length);
                 dieFace = 1 + rng.nextInt(6);
@@ -1029,7 +1063,9 @@ final class Fun {
         v.raise = 0;
         if (act != NONE) {
             double t = v.t;
-            if (act >= FIRST_FIDGET) {
+            if (act == PHONE && autoPhone) { // a scroll-along session: doesn't count as an activity
+                nextPhoneAt = t + rand(15, 60);
+            } else if (act >= FIRST_FIDGET) {
                 nextFidgetAt = t + rand(fidgetGapMin, Math.max(fidgetGapMin, fidgetGapMax));
                 nextAt = Math.max(nextAt, t + 4);
                 v.prefs.edit().putLong("lastFidgetAt", System.currentTimeMillis()).apply();
@@ -1042,6 +1078,8 @@ final class Fun {
         }
         act = NONE;
         objOn = false;
+        autoPhone = false;
+        showing = false;
     }
 
     static void pickSkateTarget(SquibView v) {
@@ -2246,6 +2284,69 @@ final class Fun {
                 }
                 break;
             }
+            case PHONE: {
+                if (autoPhone && v.kindNow() != Apps.Kind.SCROLL) {
+                    end(v);
+                    break;
+                }
+                if (showing) { // holding the picture out to you
+                    arm(v, cardSide > 0, 2);
+                    arm(v, cardSide < 0, 0);
+                    v.lookX = cardSide;
+                    v.lookY = 0;
+                    if (t - showStart > 1.2) {
+                        v.lookX = 0; // checks you're looking
+                    }
+                    if (t - showStart > 7) {
+                        showing = false;
+                        funny = -1;
+                        showAt = autoPhone ? t + span(40, 400) : rng.nextDouble() < 0.35 ? t + rand(6, 20) : 1e18;
+                        nextEvent = t + rand(0.5, 1.5);
+                    }
+                    break;
+                }
+                v.armLiftL = 1;
+                v.armLiftR = 1;
+                v.lookX = 0;
+                v.lookY = 1;
+                if (t >= nextEvent) { // thumb flick
+                    scrollVel = rand(6, 16);
+                    arm(v, right, 2);
+                    nextEvent = t + (rng.nextDouble() < 0.25 ? span(2, 12) : rand(0.6, 2.2)); // sometimes stops on a post
+                    double r = rng.nextDouble();
+                    if (r < 0.04) {
+                        v.happyFor = 1;
+                    } else if (r < 0.07) {
+                        v.annoyedFor = 1;
+                    } else if (r < 0.09) {
+                        v.surpriseFor = 0.6;
+                    }
+                }
+                feedOff += scrollVel * dt;
+                scrollVel *= Math.exp(-3 * dt);
+                if (t >= showAt && v.speech == null) {
+                    showing = true;
+                    showStart = t;
+                    if (funny < 0) {
+                        funny = rng.nextInt(FUNNY.length);
+                        if (funny == lastFunny) {
+                            funny = (funny + 1 + rng.nextInt(FUNNY.length - 1)) % FUNNY.length;
+                        }
+                    }
+                    lastFunny = funny;
+                    String[] to = FUNNY_TO[funny];
+                    funnyTo = to == null ? "" : to[rng.nextInt(to.length)];
+                    cardSide = center(v) < v.screenW / 2f ? 1 : -1;
+                    v.facing = cardSide;
+                    v.happyFor = 1.5;
+                    v.kick(1.2);
+                    maybeSay(v, "FUNNY_" + FUNNY[funny], 0.95);
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
             case DICE: {
                 if (phase == 0) { // shaking it in his hand
                     arm(v, right, 1 + ((int) (el * 10)) % 2);
@@ -3319,6 +3420,51 @@ final class Fun {
                 float gy = up ? top(v) - 10 : armRow(v) + 1;
                 float wob = phase == 1 && variant == 3 ? (((int) ((v.t - mark) / 0.09)) % 2 == 0 ? -1 : 1) : 0;
                 drawBmp(c, cubeBmp, sx(v, 14 - w / 2 + wob), sy(v, gy, lift), S, 255);
+                break;
+            }
+            case PHONE: {
+                if (showing && funny >= 0) {
+                    // the picture, in a phone-shaped frame, held out beside him
+                    String name = "FUNNY_" + FUNNY[funny];
+                    Bitmap pic = tint(name, "." + FUNNY_FROM[funny], FUNNY_BG.charAt(funny) + funnyTo)[0];
+                    float gx = cardSide > 0 ? 27 : -19, gy = 3;
+                    int a = (int) clamp((float) ((v.t - showStart) / 0.15) * 255, 0, 255);
+                    float x0 = sx(v, gx), y0 = sy(v, gy, lift);
+                    ink.setColor(Art.color('e'));
+                    ink.setAlpha(a);
+                    c.drawRect(x0, y0, x0 + 18 * S, y0 + 16 * S, ink);
+                    ink.setColor(0xFF1D1D1D);
+                    dot(v, c, gx + 8, gy + 0.5f, Art.color('o'), a, lift); // camera
+                    dot(v, c, gx + 9, gy + 0.5f, Art.color('o'), a, lift);
+                    drawBmp(c, pic, x0 + S, y0 + 2 * S, S, a);
+                    for (int k = 0; k < 3; k++) { // fake like and comment buttons under it
+                        dot(v, c, gx + 2 + k * 3, gy + 14.5f, Art.color(k == 0 ? 'r' : 'q'), a, lift);
+                    }
+                    break;
+                }
+                // his little phone, screen facing him: an endless feed
+                int px = 12, py = armRow(v) + 2;
+                for (int y = 0; y < 7; y++) {
+                    for (int x = 0; x < 5; x++) {
+                        char ch = 'e';
+                        if (x >= 1 && x <= 3 && y >= 1 && y <= 5) {
+                            int line = (int) Math.floor(feedOff) + (y - 1);
+                            int post = Math.floorDiv(line, 5), at = Math.floorMod(line, 5);
+                            int h = (post * 0x9E3779B1) ^ feedSeed;
+                            h ^= h >>> 15;
+                            h *= 0x2C1B3C6D;
+                            h ^= h >>> 12;
+                            if (at == 0) {
+                                ch = x == 1 ? Props.light(Math.floorMod(h, Props.BRIGHT)) : 'q';
+                            } else if (at <= 3) {
+                                ch = Props.light(Math.floorMod(h >>> 8, Props.PAIRS.length));
+                            } else {
+                                ch = 'w';
+                            }
+                        }
+                        dot(v, c, px + x, py + y, Art.color(ch), 255, lift);
+                    }
+                }
                 break;
             }
             case DICE: {

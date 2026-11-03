@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.11). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.12). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -47,13 +47,13 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 
 ### lines
 
-There are 1231 lines in 125 groups. His tone is dry and sarcastic, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1258 lines in 133 groups. His tone is dry and sarcastic, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
 | group | when he says it |
 |---|---|
-| THOUGHTS, MUTTERS, JOKES, FACTS, STATS | random chatter |
+| THOUGHTS, MUTTERS, JOKES, FACTS, STATS | random chatter. The **talk** button says a fact 30% of the time, a joke 35%, a thought 35%. Facts are mostly general weird facts, only a few about squids |
 | MORNING, AFTERNOON, EVENING, NIGHT | random chatter, depending on time of day |
 | OPENERS | sometimes stuck in front of chatter ("hm. ", "ok so, ") |
 | PARTY, WINTER, SPOOKY | extra chatter on special days, in December, and Oct 20 to 31 |
@@ -79,7 +79,7 @@ There are 1231 lines in 125 groups. His tone is dry and sarcastic, not cute. Eac
 | ORE, TORCH | in Minecraft, when he mines a block of ore or places a torch |
 | one group per activity (BALL, KITE, MAGIC, ...) | when he starts that activity (not every time). See the activities table |
 | one group per fidget (STRETCH, SPINNER, HICCUP, ...) | sometimes, when he does that fidget |
-| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP, DICE_SIX, DICE_ONE | moments during activities. MAIL_READ is what the letter says |
+| JUGGLE_DROP, FISHING_BITE, FISH_SHRIMP, FISH_FISH, FISH_BOOT, RAINBOW, BALLOON_POP, BALLOON_BYE, MAGIC_TADA, STAR_WISH, PAINT_DONE, GUM_POP, MARSHMALLOW_FIRE, MARSHMALLOW_YUM, BOOMERANG_CATCH, BOOMERANG_BONK, GARDEN_DONE, BOWLING_STRIKE, BOWLING_MISS, FRIEND_BYE, BLOCKS_FALL, BLOCKS_DONE, MAIL_READ, CUBE_DONE, CUBE_AGAIN, CUBE_GIVEUP, CUBE_OOPS, COIN_HEADS, COIN_TAILS, COIN_DROP, DICE_SIX, DICE_ONE, FUNNY_CAT, FUNNY_PIGEON, FUNNY_TOAST, FUNNY_CAR, FUNNY_DOG, FUNNY_RACCOON, FUNNY_PLANT | moments during activities. MAIL_READ is what the letter says |
 
 These get filled in when he says the line:
 `{time}` the current time, `{mins}` minutes scrolled (SCROLL_LONG only), `{day}` how many days he's lived on your phone, `{fed}` shrimp eaten, `{boops}`, `{pets}`.
@@ -147,7 +147,7 @@ Walks along the bottom. When standing still he bops to a beat and music notes fl
 
 ### scrolling (SCROLL)
 
-Walks along the bottom like normal.
+Gets his own little phone out and scrolls along with you: a tiny endless feed on its screen, thumb flicks, sometimes stopping on a post, now and then a reaction face. Sessions last from under a minute to several minutes, with short breaks in between (when he walks around or fidgets). Every so often he holds up a big picture of something funny he found and says something about it (see PHONE below). Scrolling along doesn't count as an activity, so it doesn't push back his other activities.
 
 - Talks every 35 seconds to 3 minutes: 30% of the time a SCROLL line, otherwise normal chatter.
 - Every 15 minutes of scrolling (`scrollCheckMinutes`), no limit: a SCROLL_LONG check-in (needs break reminders on). The count resets after 5 minutes away from scrolling apps.
@@ -256,6 +256,7 @@ Every 1 to 2 hours (`activityGapMin` / `activityGapMax`), when he's standing aro
 | BLOCKS | stacks four toy blocks (random colours) into a wobbly tower. Sometimes it falls over | anywhere |
 | MAIL | a letter floats down, he catches it and reads it out (MAIL_READ) | anywhere |
 | MEDITATE | sits with his eyes closed and floats up a little | anywhere |
+| PHONE | gets his phone out, scrolls for a bit, and shows you something funny he found: a cat crammed in a box, a pigeon judging you, toast with a face, terrible parking, a dog in sunglasses, a raccoon in a bin, or a dead plant captioned 'thriving'. The cat, dog and car come in different colours. In scrolling apps he does this on his own (see scrolling) | anywhere |
 | CUBE | twists a puzzle cube, usually for minutes. The cube keeps track of every sticker, so a solve is real: it gets scrambled, then he undoes the twists, stopping to think now and then. After a solve he often scrambles it and goes again. Versions: solves it (holds it up), speed solve, a 2x2 cube, gives up (works at it for a while, then shakes it), or messes up a solved one | anywhere |
 
 He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing.

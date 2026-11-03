@@ -9,7 +9,7 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - `app/src/main/java/com/squib/buddy/`
   - `SquibView.java`: drawing, movement, faces, touch, speech bubbles, chatter timing. Originally recovered from a decompiled build, so many local variables have generic names (`d2`, `f3`).
   - `Fun.java`: activities (kite, fishing, magic...), quick fidgets, Minecraft gear, seasonal hats, scroll check-ins. Activity ids, names, where they can happen and how likely they are are tables at the top.
-  - `Art.java`: all prop pixel art as rows of characters, and the colour for each character.
+  - `Art.java`: all prop pixel art as rows of characters, and the colour for each character. `FUNNY_*` are the pictures he shows you from his phone (16 x 12, '.' is the background colour, set in `Fun.FUNNY_BG`). Original art only: no meme characters or film characters.
   - `Props.java`: props drawn by code so one animation covers many versions: balls (size, 7 patterns, colours, turned for rolling), fidget spinners, coins, and the puzzle cube (keeps every sticker, so solves are real). Colour pairs (`PAIRS`) used to recolour toys.
   - `Lines.java`: GENERATED from `squib.json` by `tools/gen_lines.py`. Don't edit by hand.
   - `Pick.java`: picks lines without repeats (shuffled deck per group, remembers recent lines across restarts).
@@ -40,6 +40,7 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - Before shipping new animations, render them with `tools/sim/run.sh sheets NAME` and look at the pictures, and run `tools/sim/run.sh stress 8`. `SIM_OPTS="-Dreal=1" tools/sim/run.sh stress 12` runs with the real timings and reports the most activities in any hour and fidgets in any 10 minutes.
 - Activities are at most 1 an hour (1 to 2 hours apart). Fidgets are frequent (1.5 to 5 minutes after the last one ends) and some go on for minutes (the user asked for this: fidget a lot, do activities less often). The gaps are in `squib.json` settings.
 - Lengths: activities and the bigger fidgets use `Fun.span(lo, hi)` so they run anywhere from seconds to minutes. Don't make everything a few seconds long.
+- The user doesn't care about squids: keep squid talk rare (a few facts, nothing more). He's a squid in looks and mechanics (ink, shrimp), not in what he talks about.
 - Voice lines are dry, sarcastic and a bit edgy, not cute or corny (the user asked for this). No puns for the sake of puns, no "you're doing great". Keep it mean-funny, not hateful, and no jokes about self-harm.
 - Every change the user asks for also adds at least one new activity or fidget (the user asked for this).
 - Versions should be procedural: a new colour, pattern or shape is data fed to one animation (see `Props.java`, `Fun.tint`, `Fun.ball`), not a new hand-drawn animation.
