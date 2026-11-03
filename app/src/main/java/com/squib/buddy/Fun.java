@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -123,6 +123,10 @@ final class Fun {
     static final ArrayList<int[]> pendingSolve = new ArrayList<int[]>();
     static int squeeze;
     static int dieColor, dieFace = 6, rollsLeft;
+    /** Pen: body colour pair, clip colour, tip pushed out, when a twirl started (-1: not twirling). */
+    static int penColor, penClip;
+    static boolean penOut;
+    static double penTwirl = -1;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
     static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
@@ -406,6 +410,7 @@ final class Fun {
             case STRESSBALL: return "stress ball";
             case PHONE: return "phone (shows you something)";
             case DICE: return "dice";
+            case PEN: return "clicky pen";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -431,6 +436,7 @@ final class Fun {
             case STRESSBALL: return Props.PATTERNS;
             case PHONE: return FUNNY_NAMES;
             case DICE: return Props.DIE_NAMES;
+            case PEN: return Props.PAIR_NAMES;
             default: return null;
         }
     }
@@ -992,6 +998,15 @@ final class Fun {
                 mark = t + rand(0.5, 1.2); // shakes it first
                 nextEvent = t;
                 actEnd = t + 900;
+                break;
+            case PEN:
+                penColor = choose(Props.PAIRS.length);
+                penClip = rng.nextDouble() < 0.5 ? 'q' : Props.PAIRS[penColor].charAt(1);
+                penOut = false;
+                penTwirl = -1;
+                spinHand = right(v);
+                nextEvent = t + rand(0.4, 1.0);
+                actEnd = t + span(4, 200); // a few clicks, or a few minutes of it
                 break;
             case STRESSBALL:
                 ballLook = Props.ballLook(rng, 5, 6, want >= 0 ? want % Props.PATTERNS.length : -1);
@@ -2414,6 +2429,40 @@ final class Fun {
                 }
                 break;
             }
+            case PEN: {
+                boolean h = spinHand;
+                v.lookX = h ? 1 : -1;
+                arm(v, !h, 0);
+                if (penTwirl >= 0) { // spins it around his fingers
+                    arm(v, h, 2);
+                    v.lookY = -1;
+                    if (t - penTwirl >= 1.0) {
+                        penTwirl = -1;
+                        v.kick(0.5);
+                        if (rng.nextDouble() < 0.3) {
+                            spinHand = !spinHand; // passes it to the other hand
+                        }
+                    }
+                } else {
+                    arm(v, h, 1);
+                    v.lookY = 0;
+                    if (t >= nextEvent) {
+                        if (!penOut && rng.nextDouble() < 0.1) {
+                            penTwirl = t;
+                            nextEvent = t + 1.0 + rand(0.3, 1.2);
+                        } else {
+                            penOut = !penOut;
+                            v.kick(penOut ? 0.25f : -0.25f);
+                            // bursts of fast clicking, then a pause
+                            nextEvent = t + (rng.nextDouble() < 0.2 ? span(0.6, 6) : rand(0.1, 0.3));
+                        }
+                    }
+                }
+                if (t > actEnd && penTwirl < 0) {
+                    end(v);
+                }
+                break;
+            }
             case STRESSBALL: {
                 boolean h = spinHand;
                 v.lookX = h ? 1 : -1;
@@ -3473,6 +3522,33 @@ final class Fun {
                     drawBmp(c, b, sx(v, handPx(v, right) - 2), sy(v, handPy(v, right) - 4, lift), S, 255);
                 } else {
                     drawBmp(c, b, ox - 2.5f * S, oy - 2.5f * S, S, 255);
+                }
+                break;
+            }
+            case PEN: {
+                // 7 pixels long: click button, clip end, body, grip, tip
+                char body = Props.PAIRS[penColor].charAt(0), dark = Props.PAIRS[penColor].charAt(1);
+                char[] parts = {(char) penClip, dark, body, body, body, 'h', penOut ? 'e' : 0};
+                float hx = handPx(v, spinHand) + 0.5f, hy = handPy(v, spinHand) - 0.5f;
+                double ang = 0;
+                if (penTwirl >= 0) {
+                    double p = Math.min(1, (v.t - penTwirl) / 1.0);
+                    ang = (spinHand ? 1 : -1) * p * p * (3 - 2 * p) * Math.PI * 4; // two full turns, easing in and out
+                }
+                float dx = (float) Math.sin(ang), dy = (float) Math.cos(ang);
+                int top = penOut ? 1 : 0; // the button sinks in when the tip comes out
+                for (int i = top - 1; i < parts.length; i++) {
+                    char ch = i < 0 ? (char) penClip : parts[i];
+                    if (ch == 0) {
+                        continue;
+                    }
+                    float k = i - 3.5f; // the hand holds it in the middle
+                    float gx = hx + dx * k, gy = hy + dy * k;
+                    dot(v, c, Math.round(gx - 0.5f), Math.round(gy - 0.5f), Art.color(ch), 255, lift);
+                }
+                if (penTwirl < 0) { // the clip, on the side away from him
+                    float cxp = hx + (spinHand ? 1 : -1);
+                    dot(v, c, Math.round(cxp - 0.5f), Math.round(hy - 2.5f - 0.5f), Art.color((char) penClip), 255, lift);
                 }
                 break;
             }
