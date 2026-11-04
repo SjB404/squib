@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -63,9 +63,34 @@ final class Fun {
     /** Seconds between fidgets. 1.5 to 5 minutes, so he fidgets a lot (some fidgets last minutes). */
     static double fidgetGapMin = 90;
     static double fidgetGapMax = 300;
-    /** Hours when he sleeps (24-hour clock, can wrap past midnight: 23 to 6 works). */
+    /**
+     * Hours when he sleeps (24-hour clock, can wrap past midnight: 23 to 6 works). Set on the phone in his
+     * settings (SquibView.reloadPrefs), not from squib.json. Equal start and end: no bedtime.
+     */
     static double bedtimeStart = 0;
-    static double bedtimeEnd = 5;
+    static double bedtimeEnd = 8;
+
+    /**
+     * Where we are in the late-night nagging, by the clock: -1 none, 0 the hour before bedtime, 1 the first
+     * hour of bedtime, 2 later. He nags from an hour before bedtime until 5 hours into it (or bedtime's end,
+     * if that's sooner), so a long bedtime ends with him just sleeping instead of nagging while you get up.
+     */
+    static int nagPhase() {
+        double len = ((bedtimeEnd - bedtimeStart) % 24 + 24) % 24;
+        if (len == 0) {
+            return -1;
+        }
+        Calendar c = Calendar.getInstance();
+        double h = c.get(Calendar.HOUR_OF_DAY) + c.get(Calendar.MINUTE) / 60.0;
+        double since = ((h - bedtimeStart) % 24 + 24) % 24; // hours since bedtime started, 0 to 24
+        if (since >= 23) {
+            return 0;
+        }
+        if (since < Math.min(len, 5)) {
+            return since < 1 ? 1 : 2;
+        }
+        return -1;
+    }
     /** Seconds between snowflakes near squib in December. 0 turns snow off. */
     static double snowEvery = 0.9;
 
@@ -127,6 +152,12 @@ final class Fun {
     static int penColor, penClip;
     static boolean penOut;
     static double penTwirl = -1;
+    /** Cards: back colour (a PAIRS index), mode (0 riffle, 1 spring, 2 drops them), which hand a spring starts from, when this round starts. */
+    static int cardColor, cardMode;
+    static boolean cardFromRight;
+    static double cardRound;
+    static final int CARD_N = 12;
+    static final double RIFFLE_GAP = 0.08, RIFFLE_FLY = 0.2, SPRING_GAP = 0.07, SPRING_FLY = 0.45;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
     static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
@@ -223,6 +254,26 @@ final class Fun {
             return (int[]) Art.class.getDeclaredField(name + "_GRIP").get(null);
         } catch (Exception e) {
             return new int[]{0, 0};
+        }
+    }
+
+    /** A playing card's back, 3 x 4: a dark border round a light middle, in colour pair i. */
+    static String[] cardRows(int i) {
+        char l = Props.PAIRS[i].charAt(0), k = Props.PAIRS[i].charAt(1);
+        String edge = "" + k + k + k, mid = "" + k + l + k;
+        return new String[]{edge, mid, mid, edge};
+    }
+
+    /** How many cards to draw for a stack: thicker as it grows. */
+    static int stackLayers(int n) {
+        return n <= 0 ? 0 : n <= 3 ? 1 : n <= 7 ? 2 : 3;
+    }
+
+    /** Draws a card (or a stack of layers, each one pixel higher) centred on grid point x, y. */
+    static void cardAt(SquibView v, Canvas c, Bitmap card, float x, float y, int layers, float lift) {
+        int gx = Math.round(x - 1.5f), gy = Math.round(y - 2);
+        for (int i = 0; i < layers; i++) {
+            drawBmp(c, card, sx(v, gx), sy(v, gy - i, lift), v.S, 255);
         }
     }
 
@@ -411,6 +462,7 @@ final class Fun {
             case PHONE: return "phone (shows you something)";
             case DICE: return "dice";
             case PEN: return "clicky pen";
+            case CARDS: return "card shuffle";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -437,6 +489,7 @@ final class Fun {
             case PHONE: return FUNNY_NAMES;
             case DICE: return Props.DIE_NAMES;
             case PEN: return Props.PAIR_NAMES;
+            case CARDS: return new String[]{"riffle", "card spring", "drops them"};
             default: return null;
         }
     }
@@ -1007,6 +1060,13 @@ final class Fun {
                 spinHand = right(v);
                 nextEvent = t + rand(0.4, 1.0);
                 actEnd = t + span(4, 200); // a few clicks, or a few minutes of it
+                break;
+            case CARDS:
+                cardColor = rng.nextInt(Props.BRIGHT);
+                cardMode = chooseW(3, 3, 1);
+                cardFromRight = right(v);
+                cardRound = t + rand(0.4, 0.9);
+                actEnd = t + span(5, 240); // a couple of shuffles, or minutes of it
                 break;
             case STRESSBALL:
                 ballLook = Props.ballLook(rng, 5, 6, want >= 0 ? want % Props.PATTERNS.length : -1);
@@ -2463,6 +2523,59 @@ final class Fun {
                 }
                 break;
             }
+            case CARDS: {
+                double rt = t - cardRound;
+                if (cardMode == 0) { // riffle: a half in each hand, falling together in the middle
+                    arm(v, false, 1);
+                    arm(v, true, 1);
+                    v.lookX = 0;
+                    v.lookY = 1;
+                    if (rt > (CARD_N - 1) * RIFFLE_GAP + RIFFLE_FLY + 0.4) {
+                        v.kick(0.4f); // squares the deck up and splits it again
+                        if (t > actEnd) {
+                            end(v);
+                            break;
+                        }
+                        cardRound = t + rand(0.3, 1.5);
+                    }
+                    break;
+                }
+                boolean from = cardFromRight;
+                arm(v, from, 2);
+                arm(v, !from, 1);
+                double total = (CARD_N - 1) * SPRING_GAP + SPRING_FLY;
+                boolean early = rt < total / 2;
+                v.lookX = (early == from) ? 1 : -1;
+                v.lookY = 0;
+                if (cardMode == 2) { // drops them: the cards spray out and fall
+                    while (rt >= 0 && count < CARD_N && rt >= count * SPRING_GAP) {
+                        float hx = handPx(v, from) + 0.5f, hy = handPy(v, from) - 1;
+                        float dir = from ? -1 : 1;
+                        v.spawn(bmp("CARD" + cardColor, cardRows(cardColor))[0], sx(v, hx), sy(v, hy, v.lift()),
+                                dir * (float) rand(50, 170) * d, -(float) rand(40, 130) * d, (float) rand(0.7, 1.0), 600 * d, 0, 0.6f, S, true);
+                        count++;
+                    }
+                    if (count >= CARD_N && phase == 0 && rt > total + 0.3) {
+                        phase = 1;
+                        v.annoyedFor = 1.4;
+                        mark = t + 1.6;
+                    }
+                    if (phase == 1 && t >= mark) {
+                        end(v);
+                    }
+                    break;
+                }
+                if (rt > total + 0.3) { // all across: back the other way
+                    v.kick(0.3f);
+                    if (t > actEnd) {
+                        end(v);
+                        break;
+                    }
+                    cardFromRight = !cardFromRight;
+                    cardRound = t + rand(0.4, 1.6);
+                }
+                break;
+            }
             case STRESSBALL: {
                 boolean h = spinHand;
                 v.lookX = h ? 1 : -1;
@@ -3550,6 +3663,64 @@ final class Fun {
                     float cxp = hx + (spinHand ? 1 : -1);
                     dot(v, c, Math.round(cxp - 0.5f), Math.round(hy - 2.5f - 0.5f), Art.color((char) penClip), 255, lift);
                 }
+                break;
+            }
+            case CARDS: {
+                Bitmap card = bmp("CARD" + cardColor, cardRows(cardColor))[0];
+                double rt = v.t - cardRound;
+                if (cardMode == 0) {
+                    float lx = handPx(v, false) + 0.5f, rx = handPx(v, true) + 0.5f;
+                    float hy = (handPy(v, false) + handPy(v, true)) / 2f - 1, mid = 13.5f, midY = hy + 4; // the pile is in front of his middle
+                    int half = CARD_N / 2, leftOut = 0, rightOut = 0, landed = 0;
+                    if (rt >= 0) {
+                        for (int i = 0; i < CARD_N; i++) {
+                            double p = (rt - i * RIFFLE_GAP) / RIFFLE_FLY;
+                            if (p < 0) {
+                                continue;
+                            }
+                            boolean fromRight = (i % 2 == 0) == cardFromRight;
+                            if (fromRight) {
+                                rightOut++;
+                            } else {
+                                leftOut++;
+                            }
+                            if (p >= 1) {
+                                landed++;
+                            } else {
+                                float x0 = fromRight ? rx : lx;
+                                float x = (float) (x0 + (mid - x0) * p), y = (float) (hy + (midY - hy) * p - 3 * 4 * p * (1 - p));
+                                cardAt(v, c, card, x, y, 1, lift);
+                            }
+                        }
+                    }
+                    cardAt(v, c, card, lx, hy, stackLayers(half - leftOut), lift);
+                    cardAt(v, c, card, rx, hy, stackLayers(half - rightOut), lift);
+                    cardAt(v, c, card, mid, midY, stackLayers(landed), lift);
+                    break;
+                }
+                boolean from = cardFromRight;
+                float ax = handPx(v, from) + 0.5f, ay = handPy(v, from) - 1;
+                float bxx = handPx(v, !from) + 0.5f, byy = handPy(v, !from) - 1;
+                int launched = 0, landed = 0;
+                if (cardMode == 2) {
+                    launched = count;
+                } else if (rt >= 0) {
+                    for (int i = 0; i < CARD_N; i++) {
+                        double p = (rt - i * SPRING_GAP) / SPRING_FLY;
+                        if (p < 0) {
+                            continue;
+                        }
+                        launched++;
+                        if (p >= 1) {
+                            landed++;
+                        } else { // an arc from hand to hand, over the front of him
+                            float x = (float) (ax + (bxx - ax) * p), y = (float) (ay + (byy - ay) * p - 4 * 6 * p * (1 - p));
+                            cardAt(v, c, card, x, y, 1, lift);
+                        }
+                    }
+                }
+                cardAt(v, c, card, ax, ay, stackLayers(CARD_N - launched), lift);
+                cardAt(v, c, card, bxx, byy, stackLayers(landed), lift);
                 break;
             }
             case STRESSBALL: {

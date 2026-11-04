@@ -1325,6 +1325,15 @@ final class Lines {
             "*twirls pen*",
             "click. click. click.",
             "one more click."};
+    static String[] CARDS = {
+            "*shuffles*",
+            "shuffling.",
+            "*riffles the deck*",
+            "one more shuffle.",
+            "cards.",
+            "*bridges the deck*",
+            "fifty-two. probably.",
+            "good deck."};
 
     /** A line group by name, or null if there's no such group. */
     static String[] get(String name) {

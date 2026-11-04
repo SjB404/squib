@@ -260,6 +260,9 @@ final class SquibView extends View {
         this.chatty = this.prefs.getBoolean("chatty", true);
         this.reminders = this.prefs.getBoolean("reminders", true);
         this.appModes = this.prefs.getBoolean("appModes", true);
+        Fun.bedtimeStart = this.prefs.getInt("bedStart", Prefs.BED_START) / 60.0d;
+        Fun.bedtimeEnd = this.prefs.getInt("bedEnd", Prefs.BED_END) / 60.0d;
+        Fun.nextSeasonCheck = 0.0d; // works out bedtime again right away
         place();
         String str = this.speech;
         if (str != null) {
@@ -693,12 +696,12 @@ final class SquibView extends View {
             this.watchSecs = 0.0d;
             this.watchNudged = false;
         }
-        int i3 = Calendar.getInstance().get(11);
-        if (i3 >= 23 || i3 < 5) {
+        int nagPhase = Fun.nagPhase();
+        if (nagPhase >= 0) {
             double d6 = this.t;
             if (d6 >= this.nextLateCheckAt) {
-                this.nextLateCheckAt = d6 + ((i3 == 23 ? 40.0d : i3 == 0 ? 25.0d : 15.0d) * 60.0d * ((this.rng.nextDouble() * 0.5d) + 0.75d));
-                lateNag(i3);
+                this.nextLateCheckAt = d6 + ((nagPhase == 0 ? 40.0d : nagPhase == 1 ? 25.0d : 15.0d) * 60.0d * ((this.rng.nextDouble() * 0.5d) + 0.75d));
+                lateNag(nagPhase);
             }
         }
         if (this.chatty && this.hungerSecs > 14400.0d && this.t - this.lastHungry > 1800.0d && this.motion == Motion.IDLE && this.speech == null) {
@@ -708,12 +711,13 @@ final class SquibView extends View {
     }
 
     /**
-     * Tells you it's late (LATE until 1am, LATE_NIGHT after), with the phone's tick. At bedtime, if he's asleep,
-     * he wakes just long enough to say it (usually a WOKE_NAG line) and lies back down about 14 seconds later.
+     * Tells you it's late, with the phone's tick. phase is {@link Fun#nagPhase()}: LATE in the hour before bedtime
+     * and its first hour, LATE_NIGHT after. At bedtime, if he's asleep, he wakes just long enough to say it
+     * (usually a WOKE_NAG line) and lies back down about 14 seconds later.
      * Also the "nag" button in his settings, which runs it right away at any hour to test it.
      */
-    void lateNag(int hour) {
-        String[] nag = (hour >= 1 && hour < 5) ? Lines.LATE_NIGHT : Lines.LATE;
+    void lateNag(int phase) {
+        String[] nag = phase >= 2 ? Lines.LATE_NIGHT : Lines.LATE;
         if (Fun.bedtime && this.motion == Motion.SLEEP) {
             setMotion(Motion.IDLE);
             this.surpriseFor = 0.4d;
@@ -734,7 +738,7 @@ final class SquibView extends View {
     }
 
     /**
-     * Bedtime (midnight to 5am by default, see Fun.bedtimeStart/End): he goes to sleep and stays asleep.
+     * Bedtime (midnight to 8am by default, set in his settings, see Fun.bedtimeStart/End): he goes to sleep and stays asleep.
      * Waking him (tap, screen on, or his own bedtime nag) keeps him up for a bit, then he lies down again.
      */
     void bedtime() {
@@ -776,14 +780,19 @@ final class SquibView extends View {
             this.activeSecs = 0.0d;
         }
         if (Fun.bedtime) {
-            // at night only a long screen-off wakes him, and he always nags about it
+            // at night only a long screen-off wakes him. While it's nagging time he nags about it;
+            // later on (the morning end of a long bedtime) he just says hi, then goes back to sleep
             if (d > 600.0d && visible()) {
                 if (this.motion == Motion.SLEEP) {
                     setMotion(Motion.IDLE);
                 }
                 this.surpriseFor = 0.6d;
-                say(Pick.one(Lines.WOKE_NAG), 0.0d);
-                lateNagged();
+                if (Fun.nagPhase() >= 0) {
+                    say(Pick.one(Lines.WOKE_NAG), 0.0d);
+                    lateNagged();
+                } else {
+                    say(Pick.one(Lines.WAKE), 0.0d);
+                }
             }
             return;
         }

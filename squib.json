@@ -6,9 +6,7 @@
     "activityGapMax": 7200,
     "fidgetGapMin": 90,
     "fidgetGapMax": 300,
-    "snowEvery": 0.9,
-    "bedtimeStart": 0,
-    "bedtimeEnd": 5
+    "snowEvery": 0.9
   },
   "lines": {
     "THOUGHTS": [
@@ -1459,6 +1457,16 @@
       "*twirls pen*",
       "click. click. click.",
       "one more click."
+    ],
+    "CARDS": [
+      "*shuffles*",
+      "shuffling.",
+      "*riffles the deck*",
+      "one more shuffle.",
+      "cards.",
+      "*bridges the deck*",
+      "fifty-two. probably.",
+      "good deck."
     ]
   },
   "apps": {

@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.15.1). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.15.3). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -42,7 +42,6 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 | `scrollCheckMinutes` | 15 | minutes between scroll check-ins |
 | `activityGapMin` / `activityGapMax` | 3600 / 7200 | seconds between his activities (a random time in between). 1 to 2 hours, so at most 1 an hour |
 | `fidgetGapMin` / `fidgetGapMax` | 90 / 300 | seconds between fidgets, counted from when the last one ends. 1.5 to 5 minutes, so he fidgets a lot |
-| `bedtimeStart` / `bedtimeEnd` | 0 / 5 | hours when he sleeps (24-hour clock). Can wrap past midnight, e.g. 23 / 6 |
 | `snowEvery` | 0.9 | seconds between snowflakes in December. `0` turns snow off |
 
 ### lines
@@ -64,8 +63,8 @@ There are 1181 lines in 134 groups. His tone is neutral and dry: plain observati
 | WAKE | when you turn the screen back on after a while |
 | FED, HUNGRY | after eating, and when he hasn't eaten in hours |
 | BREAK | after 50 minutes of phone use |
-| LATE | 11pm to 1am bedtime nagging |
-| LATE_NIGHT | 1am to 5am bedtime nagging |
+| LATE | bedtime nagging, the hour before bedtime and its first hour (11pm to 1am by default) |
+| LATE_NIGHT | bedtime nagging after that, up to 5 hours into bedtime (1am to 5am by default) |
 | BEDTIME | when he goes to sleep for the night |
 | WOKE_NAG | when he wakes up at night to tell you to go to bed, or when the screen comes back on at night |
 | WATCH_ENTER, WATCH, WATCH_LONG | video apps (WATCH_LONG: after 2 hours) |
@@ -111,17 +110,19 @@ Bedtime nagging and the 50-minute break reminder happen in every mode except HID
 
 ## Bedtime
 
-From midnight to 5am (`bedtimeStart` / `bedtimeEnd`) he goes to sleep, in every mode (with his popcorn if you're watching something, on his cloud if he's up top). No activities, fidgets or chatter while it's bedtime. In Minecraft he stops swinging and mining.
+From midnight to 8am by default he goes to sleep, in every mode (with his popcorn if you're watching something, on his cloud if he's up top). No activities, fidgets or chatter while it's bedtime. In Minecraft he stops swinging and mining.
 
-He wakes up now and then to tell you to go to bed (a WOKE_NAG line, or a LATE / LATE_NIGHT one): about every 20 to 30 minutes until 1am, then about every 11 to 19 minutes. He goes back to sleep about 15 seconds later.
+**Setting the times:** "goes to sleep at" and "wakes up at" in his settings, in half-hour steps. Setting them the same turns bedtime off. This is set on the phone; `squib.json` doesn't change it (versions before 1.15.3 read `bedtimeStart` / `bedtimeEnd` from its settings).
+
+He tells you it's late from an hour before bedtime until 5 hours into it (11pm to 5am with the default times), or until bedtime ends if that's sooner. After that he just sleeps, so he doesn't nag in the morning while you're getting up. He wakes up now and then to say it (a WOKE_NAG line, or a LATE / LATE_NIGHT one): about every 30 to 50 minutes in the hour before bedtime, every 20 to 30 minutes in its first hour, then about every 11 to 19 minutes. He goes back to sleep about 15 seconds later.
 
 Every time he tells you it's late (the LATE, LATE_NIGHT and WOKE_NAG lines, including the screen-on one below and the nag button) the phone gives two light ticks. On phones with a proper haptic motor that's the crisp "tick" effect, not a buzz; older phones get the closest short tap they can do.
 
-Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line. A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for 15 to 25 seconds, then lies down again.
+Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line (or, after the nagging hours, a plain WAKE hello with no tick). A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for 15 to 25 seconds, then lies down again.
 
 Nothing else wakes him at night. Switching apps or unlocking the phone moves him to the new app's spot but he stays asleep, and says nothing about the app. While he's awake at bedtime he stays where he is (no walking around or hopping), just looks around.
 
-**Testing it:** the **nag** button in his settings makes him do the late nag right now, at any hour, with the phone tick. Outside bedtime it's a LATE line (LATE_NIGHT from 1am to 5am); at bedtime, if he's asleep, he wakes up for it like he does on his own.
+**Testing it:** the **nag** button in his settings makes him do the late nag right now, at any hour, with the phone tick. Outside the nagging hours it's a LATE line; at bedtime, if he's asleep, he wakes up for it like he does on his own.
 
 ### everything else (HOME)
 
@@ -269,13 +270,14 @@ He doesn't do activities while watching videos (he has popcorn), in hidden apps,
 
 ### Fidgets
 
-Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE or PEN. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE and PEN can go on for minutes.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN or CARDS. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE, PEN and CARDS can go on for minutes.
 
 - **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
 - **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
 - **STRESSBALL:** squeezes a stress ball (any ball pattern and colours), squashing it flatter the harder he squeezes, with an annoyed face. Sometimes tosses it over his head to the other hand.
 - **DICE:** shakes a die (white, red, black, blue, green, yellow or purple) and throws it on the floor in front of him. It tumbles and bounces, then he looks at what he rolled: happy at a six, annoyed at a one. Up to about 10 rolls in a row.
 - **PEN:** clicks a pen in any of the 11 colours (grey or matching clip), in quick bursts with pauses. The button sinks in when the tip comes out. Now and then he twirls it twice round his fingers, sometimes passing it to the other hand. A few seconds to a few minutes.
+- **CARDS:** shuffles a small deck (card backs in a random bright colour). Riffle: half the deck in each hand, the cards drop in turn onto a pile in front of him, then he splits it and goes again. Card spring: the cards arc from one hand to the other over his head, then back. Now and then the spring goes wrong and the cards spray onto the floor, and he looks annoyed. A few seconds to a few minutes.
 
 ## Minecraft
 

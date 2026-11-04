@@ -35,7 +35,7 @@ public final class MainActivity extends Activity {
     float d;
     SharedPreferences prefs;
     Button hideButton, notifyButton, overlayButton, sizeButton, startStop, textButton, usageButton;
-    TextView notifyStatus, overlayStatus, pauseLength, stats, usageStatus;
+    TextView bedEndLabel, bedStartLabel, notifyStatus, overlayStatus, pauseLength, stats, usageStatus;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -159,6 +159,9 @@ public final class MainActivity extends Activity {
         toggle(root, "chatty", "talks on his own now and then", "chatty", true);
         toggle(root, "break reminders", "after 50 minutes on your phone, and long scrolls", "reminders", true);
         toggle(root, "app modes", "reacts to the app you're in (needs usage access)", "appModes", true);
+        bedStartLabel = timeRow(root, "bedStart", Prefs.BED_START);
+        bedEndLabel = timeRow(root, "bedEnd", Prefs.BED_END);
+        root.addView(label("he sleeps between these times and tells you when it's late (from an hour before bedtime, for up to 5 hours). set them the same for no bedtime.", 13, MUTED, false));
         toggle(root, "start with phone", "comes back when your phone restarts", "boot", true);
         toggle(root, "come back after a pause", "\"pause\" in his notification stops him completely, for apps that won't work with him on screen. on: he comes back after the time below. off: he waits until you press start", "pauseAuto", true);
         pauseLength = label("", 14, CREAM, false);
@@ -220,6 +223,9 @@ public final class MainActivity extends Activity {
             start = until > System.currentTimeMillis() ? "start squib (paused till " + Pause.clock(this, until) + ")" : "start squib (paused)";
         }
         startStop.setText(SquibService.running ? "send squib to bed" : overlay ? start : "allow squib to appear first");
+        int bs = prefs.getInt("bedStart", Prefs.BED_START), be = prefs.getInt("bedEnd", Prefs.BED_END);
+        bedStartLabel.setText("goes to sleep at: " + clock(bs) + (bs == be ? "   (no bedtime)" : ""));
+        bedEndLabel.setText("wakes up at: " + clock(be) + (bs == be ? "   (no bedtime)" : ""));
         int mins = Pause.minutes(this);
         pauseLength.setText("pause for: " + (mins < 60 || mins % 60 != 0 ? mins + " min" : (mins / 60) + (mins == 60 ? " hour" : " hours")));
         hideButton.setEnabled(SquibService.running);
@@ -229,6 +235,40 @@ public final class MainActivity extends Activity {
         stats.setText("squib " + version() + "  ·  day " + ((today - prefs.getLong("born", today)) + 1) + "  ·  " + prefs.getInt("fed", 0) + " shrimp eaten  ·  "
                 + prefs.getInt("boops", 0) + " boops  ·  " + prefs.getInt("pets", 0) + " pets");
         Remote.refreshRow(this);
+    }
+
+    /** A row with a time and - / + buttons that move it by half an hour. Returns the label. */
+    TextView timeRow(LinearLayout root, final String key, final int def) {
+        TextView text = label("", 14, CREAM, false);
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(16);
+        row.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button("-", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stepTime(key, def, -30);
+            }
+        }));
+        row.addView(button("+", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stepTime(key, def, 30);
+            }
+        }));
+        root.addView(row);
+        return text;
+    }
+
+    void stepTime(String key, int def, int by) {
+        int m = ((prefs.getInt(key, def) + by) % 1440 + 1440) % 1440;
+        prefs.edit().putInt(key, m).apply();
+        changed();
+    }
+
+    /** Minutes after midnight as "8:00 am". */
+    static String clock(int m) {
+        int h = m / 60 % 24, h12 = h % 12 == 0 ? 12 : h % 12;
+        return h12 + ":" + (m % 60 < 10 ? "0" : "") + (m % 60) + (h < 12 ? " am" : " pm");
     }
 
     /** Moves the pause length one step along Pause.MINUTES. */

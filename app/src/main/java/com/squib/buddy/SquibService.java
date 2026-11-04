@@ -132,7 +132,7 @@ public final class SquibService extends Service {
             this.stage.feed();
         } else if (ACTION_NAG.equals(action)) {
             this.stage.userHidden = false;
-            this.stage.lateNag(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY));
+            this.stage.lateNag(Math.max(0, Fun.nagPhase()));
         } else if (ACTION_TALK.equals(action)) {
             this.stage.userHidden = false;
             this.stage.talk();

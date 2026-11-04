@@ -175,6 +175,9 @@ final class Remote {
             Iterator<String> keys = settings.keys();
             while (keys.hasNext()) {
                 String key = keys.next();
+                if (key.startsWith("bedtime")) {
+                    continue; // bedtime is set on the phone now (older versions still read it from the file)
+                }
                 double v = settings.optDouble(key, Double.NaN);
                 Field f = field(Fun.class, key);
                 if (f != null && f.getType() == double.class && !Double.isNaN(v) && v >= 0) {
