@@ -335,11 +335,19 @@ public final class SquibService extends Service {
     void pollMusic() {
         if (this.audio != null && this.stage != null) {
             boolean was = this.stage.musicOn;
+            boolean active = false;
             try {
-                this.stage.musicOn = this.audio.isMusicActive();
+                active = this.audio.isMusicActive();
             } catch (RuntimeException e) {
-                this.stage.musicOn = false;
                 Trace.e("music", "music check failed", e);
+            }
+            // isMusicActive alone isn't enough: on this phone it says "playing" for about 3 seconds after the screen
+            // comes on, from a system sound (usage unknown) or with nothing listed at all. Music and game sound
+            // is listed as a player with usage MEDIA or GAME, so both have to agree.
+            int media = mediaPlayers();
+            this.stage.musicOn = active && media > 0;
+            if (active && media == 0) {
+                Trace.t("music", "android says playing, but no music or game player is listed: ignoring it");
             }
             String players = players();
             boolean playersChanged = !players.equals(this.lastPlayers);
@@ -355,6 +363,27 @@ public final class SquibService extends Service {
     }
 
     String lastPlayers = "";
+
+    /** How many listed players are music, video or game sound (usage MEDIA or GAME) and not paused. */
+    int mediaPlayers() {
+        int n = 0;
+        try {
+            for (AudioPlaybackConfiguration c : this.audio.getActivePlaybackConfigurations()) {
+                int usage = c.getAudioAttributes().getUsage();
+                if (usage != android.media.AudioAttributes.USAGE_MEDIA && usage != android.media.AudioAttributes.USAGE_GAME) {
+                    continue;
+                }
+                String s = c.toString(); // the state isn't readable directly; it's in the description
+                if (s.contains("state:") && !s.contains("state:started")) {
+                    continue;
+                }
+                n++;
+            }
+        } catch (RuntimeException e) {
+            Trace.e("music", "player list failed", e);
+        }
+        return n;
+    }
 
     /** What Android lists as playing sound right now: the kind of sound (usage) and its state. No app names (Android hides them). */
     String players() {
