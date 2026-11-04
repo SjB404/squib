@@ -187,6 +187,8 @@ final class Fun {
     /** On while music plays. listenOn / listenOff: when they went on or came off (-1: never), for the animation. */
     static boolean listening, hpSide;
     static int vibe; // vibe 0 nods along, 1 eyes shut, 2 a hand on the headphones
+    /** Seconds music has been playing without a break, so a blip can't put them on. */
+    static double musicFor;
     static double listenOn = -1, listenOff = -1, quietFor, nextVibe, vibeEnd, beatGap = 0.5;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
@@ -3496,11 +3498,12 @@ final class Fun {
      */
     static void listen(SquibView v, double t, double dt) {
         Apps.Kind kind = v.kindNow();
+        musicFor = v.musicOn ? musicFor + dt : 0;
         if (!listening) {
             // In a music app, or in a quiet app when the last media app you opened was a music app (Android doesn't
             // say which app is playing, and games and scrolling apps make their own sound, so they can't start it).
             boolean quiet = kind == Apps.Kind.HOME || kind == Apps.Kind.CHAT || kind == Apps.Kind.NAV || kind == Apps.Kind.READ;
-            if (v.musicOn && (kind == Apps.Kind.MUSIC || (quiet && v.lastMediaMusic)) && v.visible() && !inMc) {
+            if (musicFor >= 1.5 && (kind == Apps.Kind.MUSIC || (quiet && v.lastMediaMusic)) && v.visible() && !inMc) {
                 listening = true;
                 beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
                 listenOn = t;

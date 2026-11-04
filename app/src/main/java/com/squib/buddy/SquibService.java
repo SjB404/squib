@@ -336,6 +336,14 @@ public final class SquibService extends Service {
                 }
                 if ("android.intent.action.SCREEN_ON".equals(intent.getAction()) && !SquibService.this.screenOn) {
                     SquibService.this.screenOn = true;
+                    // The music check stops while the screen is off, so check again before he moves: if it was paused
+                    // while the phone was locked, the headphones come straight off instead of after the gap-between-songs wait.
+                    SquibService.this.pollMusic();
+                    if (!SquibService.this.stage.musicOn) {
+                        Fun.listening = false;
+                        Fun.listenOff = -1;
+                        Fun.musicFor = 0;
+                    }
                     SquibService.this.stage.onScreenOn((SystemClock.elapsedRealtime() - SquibService.this.screenOffAt) / 1000.0d);
                     SquibService.this.handler.post(SquibService.this.frame);
                 }
