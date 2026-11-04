@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- app icon: close-up of his face, eyes glancing up and to the right (his 2x2 pixel eyes, 4dp per pixel) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FF111111" android:pathData="M34,44h8v8h-8z" />
+    <path android:fillColor="#FF111111" android:pathData="M74,44h8v8h-8z" />
+</vector>
