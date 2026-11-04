@@ -93,8 +93,8 @@ final class SquibView extends View {
     double noteIn;
     /** Something is playing audio as music (set about once a second by SquibService). See Fun.listen. */
     boolean musicOn;
-    /** The last music or video app opened was a music app: music playing now is probably from it. */
-    boolean lastMediaMusic;
+    /** The last music or video app opened was a video app: sound playing now is probably a video, not music. */
+    boolean lastMediaVideo;
     final List<Particle> particles;
     boolean perched;
     /** Set by Fun while a picked trick needs a different spot: 1 on a cloud, 2 on the floor, 0 normal. */
@@ -363,9 +363,9 @@ final class SquibView extends View {
         this.pkg = str;
         Apps.Kind kindOf = Apps.kindOf(getContext(), str);
         if (kindOf == Apps.Kind.MUSIC) {
-            this.lastMediaMusic = true;
+            this.lastMediaVideo = false;
         } else if (kindOf == Apps.Kind.WATCH) {
-            this.lastMediaMusic = false;
+            this.lastMediaVideo = true;
         }
         if (kindOf == this.kind) {
             return;

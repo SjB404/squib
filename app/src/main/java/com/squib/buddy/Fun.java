@@ -188,7 +188,10 @@ final class Fun {
     static boolean listening, hpSide;
     static int vibe; // vibe 0 nods along, 1 eyes shut, 2 a hand on the headphones
     /** Seconds music has been playing without a break, so a blip can't put them on. */
-    static double musicFor;
+    static double musicFor, pkgSince;
+    /** The app on screen, and whether it's been quiet in it for a bit (games make sound as soon as they open). */
+    static String listenPkg;
+    static boolean quietInApp;
     static double listenOn = -1, listenOff = -1, quietFor, nextVibe, vibeEnd, beatGap = 0.5;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
@@ -3499,11 +3502,22 @@ final class Fun {
     static void listen(SquibView v, double t, double dt) {
         Apps.Kind kind = v.kindNow();
         musicFor = v.musicOn ? musicFor + dt : 0;
+        if (v.pkg != null && !v.pkg.equals(listenPkg)) {
+            listenPkg = v.pkg;
+            pkgSince = t;
+            quietInApp = false;
+        }
+        if (!v.musicOn && t - pkgSince > 3) {
+            quietInApp = true;
+        }
         if (!listening) {
-            // In a music app, or in a quiet app when the last media app you opened was a music app (Android doesn't
-            // say which app is playing, and games and scrolling apps make their own sound, so they can't start it).
-            boolean quiet = kind == Apps.Kind.HOME || kind == Apps.Kind.CHAT || kind == Apps.Kind.NAV || kind == Apps.Kind.READ;
-            if (musicFor >= 1.5 && (kind == Apps.Kind.MUSIC || (quiet && v.lastMediaMusic)) && v.visible() && !inMc) {
+            // Android doesn't say which app is playing. So: any music in a music app; in most other apps too, unless
+            // the last media app you opened was a video app (a video still playing). Scrolling feeds and video apps
+            // make their own sound, so they can't start it. Games make sound from the start, so in a game it only
+            // starts if it was quiet for a while in that game first (you put music on during it).
+            boolean other = kind != Apps.Kind.WATCH && kind != Apps.Kind.HIDE && kind != Apps.Kind.SCROLL
+                    && (kind != Apps.Kind.GAME || quietInApp) && !v.lastMediaVideo;
+            if (musicFor >= 1.5 && (kind == Apps.Kind.MUSIC || other) && v.visible()) {
                 listening = true;
                 beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
                 listenOn = t;
