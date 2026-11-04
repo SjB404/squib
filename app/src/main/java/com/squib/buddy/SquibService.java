@@ -198,6 +198,12 @@ public final class SquibService extends Service {
 
     void addWindows() {
         this.stage = new SquibView(this);
+        this.stage.onLateNag = new Runnable() {
+            @Override
+            public void run() {
+                Haptics.tick(SquibService.this);
+            }
+        };
         WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(1, 1, 2038, 16778008, -3);
         this.stageLp = layoutParams;
         layoutParams.gravity = 8388659;

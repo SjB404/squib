@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.13). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.14). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -114,6 +114,8 @@ Bedtime nagging and the 50-minute break reminder happen in every mode except HID
 From midnight to 5am (`bedtimeStart` / `bedtimeEnd`) he goes to sleep, in every mode (with his popcorn if you're watching something, on his cloud if he's up top). No activities, fidgets or chatter while it's bedtime. In Minecraft he stops swinging and mining.
 
 He wakes up now and then to tell you to go to bed (a WOKE_NAG line, or a LATE / LATE_NIGHT one): about every 20 to 30 minutes until 1am, then about every 11 to 19 minutes. He goes back to sleep about 15 seconds later.
+
+Every time he tells you it's late (the LATE, LATE_NIGHT and WOKE_NAG lines, including the screen-on one below) the phone gives two light ticks. On phones with a proper haptic motor that's the crisp "tick" effect, not a buzz; older phones get the closest short tap they can do.
 
 Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line. A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for about a minute, then lies down again.
 

@@ -88,6 +88,8 @@ final class SquibView extends View {
     double nextChatAt;
     double nextDecision;
     double nextLateCheckAt;
+    /** Run when he tells you it's late (set by SquibService to tick the phone's vibration). Null in the sim. */
+    Runnable onLateNag;
     double noteIn;
     final List<Particle> particles;
     boolean perched;
@@ -693,11 +695,18 @@ final class SquibView extends View {
                     }
                 }
                 say(Pick.one(nag), 2.0d);
+                lateNagged();
             }
         }
         if (this.chatty && this.hungerSecs > 14400.0d && this.t - this.lastHungry > 1800.0d && this.motion == Motion.IDLE && this.speech == null) {
             this.lastHungry = this.t;
             say(Pick.one(Lines.HUNGRY), 0.0d);
+        }
+    }
+
+    void lateNagged() {
+        if (this.onLateNag != null) {
+            this.onLateNag.run();
         }
     }
 
@@ -751,6 +760,7 @@ final class SquibView extends View {
                 }
                 this.surpriseFor = 0.6d;
                 say(Pick.one(Lines.WOKE_NAG), 0.0d);
+                lateNagged();
             }
             return;
         }
