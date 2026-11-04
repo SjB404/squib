@@ -15,6 +15,7 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
   - `Pick.java`: picks lines without repeats (shuffled deck per group, remembers recent lines across restarts).
   - `Remote.java`: downloads and applies `squib.json`.
   - `SquibService.java`, `MainActivity.java`, `Apps.java`, `PixelFont.java`, `BootReceiver.java`, `Prefs.java`.
+  - `Trace.java`: the log (squib-log.txt in the app's files, exported from settings). Log anything new he notices or decides with `Trace.t/d/i/w/e`, especially the reason behind a decision, so a log the user sends can explain a bug.
 - `signing/squib-debug.keystore`: the key every build has been signed with (password `android`, alias `androiddebugkey`). Always sign with it, or the new APK won't install over the phone's copy.
 - `apk/Squib.apk`: the current release, committed so the user can download it from GitHub.
 - `tools/build-apk.sh`: builds `apk/Squib.apk` without Gradle or the Android SDK (for cloud sessions where Google's servers are blocked).

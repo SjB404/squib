@@ -31,6 +31,7 @@ public final class MainActivity extends Activity {
     static final int CREAM = 0xFFFAF9F5;
     static final int MUTED = 0xFFB8B3A8;
     static final String[] SIZE_NAMES = {"small", "medium", "large"};
+    static final int EXPORT = 7;
 
     float d;
     SharedPreferences prefs;
@@ -40,6 +41,8 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
+        Trace.init(getFilesDir());
+        Trace.d("settings", "settings screen opened");
         prefs = Prefs.get(this);
         d = getResources().getDisplayMetrics().density;
 
@@ -184,6 +187,29 @@ public final class MainActivity extends Activity {
         toggle(root, "click-through", "taps go straight through him. you can't boop, pet or drag him while this is on", "clickThrough", false);
         Remote.addRow(this, root);
 
+        heading(root, "log");
+        root.addView(label("everything he sees and does is written to a log (the app on screen, music, headphones, activities, what he says). \"export log\" saves it as a text file you can send for fixing bugs.", 13, MUTED, false));
+        LinearLayout logRow = new LinearLayout(this);
+        logRow.addView(button("export log", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain")
+                        .putExtra(Intent.EXTRA_TITLE, "squib-log-" + new java.text.SimpleDateFormat("yyyy-MM-dd-HHmm", java.util.Locale.US)
+                                .format(new java.util.Date()) + ".txt");
+                startActivityForResult(save, EXPORT);
+            }
+        }), weight());
+        logRow.addView(button("clear log", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Trace.clear();
+                Trace.i("settings", "log cleared");
+                refresh();
+                Toast.makeText(MainActivity.this, "log cleared", Toast.LENGTH_SHORT).show();
+            }
+        }), weight());
+        root.addView(logRow);
+
         heading(root, "how to play");
         root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. \"pick a trick\" / \"pick a fidget\" let you choose which one, and which version. \"nag\" makes him tell you it's late right now (with the phone tick), to test it. his notification has hide, feed and pause. when he's paused, it has start and stop.", 14, CREAM, false));
         heading(root, "app modes");
@@ -234,8 +260,34 @@ public final class MainActivity extends Activity {
         long today = System.currentTimeMillis() / 86400000L;
         stats.setText("squib " + version() + "  ·  day " + ((today - prefs.getLong("born", today)) + 1) + "  ·  " + prefs.getInt("fed", 0) + " shrimp eaten  ·  "
                 + prefs.getInt("boops", 0) + " boops  ·  " + prefs.getInt("pets", 0) + " pets"
-                + "\nmusic check: " + (musicPlaying() ? "android says something is playing" : "nothing playing"));
+                + "\nmusic check: " + (musicPlaying() ? "android says something is playing" : "nothing playing")
+                + "  ·  log " + Trace.kb() + " KB");
         Remote.refreshRow(this);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode != EXPORT || resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        try {
+            java.io.OutputStream os = getContentResolver().openOutputStream(data.getData());
+            StringBuilder h = new StringBuilder();
+            h.append("squib log, exported ").append(new java.util.Date()).append("\n");
+            h.append("squib ").append(version()).append(", android ").append(Build.VERSION.RELEASE).append(" (sdk ")
+                    .append(Build.VERSION.SDK_INT).append("), ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append("\n");
+            h.append("running: ").append(SquibService.running).append(", show over apps: ").append(Settings.canDrawOverlays(this))
+                    .append(", usage access: ").append(SquibService.hasUsageAccess(this)).append(", music now: ").append(musicPlaying()).append("\n");
+            h.append("settings: ").append(prefs.getAll()).append("\n");
+            h.append("levels: T trace (every check), D detail, I events, W problems, E errors and crashes\n\n");
+            Trace.exportTo(h.toString(), os);
+            os.close();
+            Trace.i("settings", "log exported");
+            Toast.makeText(this, "log saved", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Trace.e("settings", "export failed", e);
+            Toast.makeText(this, "couldn't save the log: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     /** What Android tells squib about music right now (for checking the headphones). */

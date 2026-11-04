@@ -100,6 +100,7 @@ final class Remote {
             c.setRequestProperty("Cache-Control", "no-cache");
             int code = c.getResponseCode();
             if (code != 200) {
+                Trace.w("remote", "download failed: " + code);
                 prefs.edit().putString("remoteErr", "couldn't download (" + code + ")").apply();
                 return;
             }
@@ -110,6 +111,7 @@ final class Remote {
             out.write(json.getBytes("UTF-8"));
             out.close();
             tmp.renameTo(cache(context));
+            Trace.i("remote", "downloaded squib.json (" + json.length() + " chars)");
             main.post(new Runnable() {
                 @Override
                 public void run() {
@@ -117,6 +119,7 @@ final class Remote {
                 }
             });
         } catch (Exception e) {
+            Trace.w("remote", "download failed: " + e);
             prefs.edit().putString("remoteErr", "couldn't download (" + e.getClass().getSimpleName() + ")").apply();
         } finally {
             fetching = false;

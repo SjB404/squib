@@ -17,6 +17,8 @@ import android.graphics.Rect;
 import android.graphics.drawable.Icon;
 import android.hardware.input.InputManager;
 import android.media.AudioManager;
+import android.media.AudioPlaybackConfiguration;
+import java.util.List;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -86,6 +88,12 @@ public final class SquibService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Trace.init(getFilesDir());
+        final Thread.UncaughtExceptionHandler crash = Thread.getDefaultUncaughtExceptionHandler();
+        if (!(crash instanceof CrashLogger)) {
+            Thread.setDefaultUncaughtExceptionHandler(new CrashLogger(crash));
+        }
+        Trace.i("service", "starting. android " + Build.VERSION.SDK_INT + ", " + Build.MANUFACTURER + " " + Build.MODEL);
         running = true;
         NotificationChannel notificationChannel = new NotificationChannel(CHANNEL, CHANNEL, 2);
         notificationChannel.setDescription("squib's controls: hide, feed, pause");
@@ -93,9 +101,11 @@ public final class SquibService extends Service {
         startInForeground();
         Pause.clear(this);
         if (!Settings.canDrawOverlays(this)) {
+            Trace.w("service", "no permission to show over other apps: stopping");
             stopSelf();
             return;
         }
+        Trace.i("service", "usage access: " + hasUsageAccess(this));
         this.wm = (WindowManager) getSystemService(WindowManager.class);
         this.usage = (UsageStatsManager) getSystemService(UsageStatsManager.class);
         this.audio = (AudioManager) getSystemService(AudioManager.class);
@@ -110,6 +120,7 @@ public final class SquibService extends Service {
         pollMusic();
         // Started with the screen off (by the pause alarm or at boot): wait for the screen to come on.
         if (!((PowerManager) getSystemService(PowerManager.class)).isInteractive()) {
+            Trace.i("service", "started with the screen off: waiting for it to come on");
             this.screenOn = false;
             this.screenOffAt = SystemClock.elapsedRealtime();
             return;
@@ -124,6 +135,8 @@ public final class SquibService extends Service {
             return 2;
         }
         String action = intent != null ? intent.getAction() : null;
+        Trace.i("service", "command: " + action + (intent != null && intent.getStringExtra("act") != null
+                ? " act=" + intent.getStringExtra("act") + " variant=" + intent.getIntExtra("variant", -1) : ""));
         if (ACTION_STOP.equals(action)) {
             stopSelf();
             return 2;
@@ -170,6 +183,8 @@ public final class SquibService extends Service {
 
     @Override
     public void onDestroy() {
+        Trace.i("service", "stopping");
+        Trace.flush();
         running = false;
         this.handler.removeCallbacks(this.frame);
         BroadcastReceiver broadcastReceiver = this.screenReceiver;
@@ -288,17 +303,24 @@ public final class SquibService extends Service {
             UsageEvents queryEvents = this.usage.queryEvents(j == 0 ? currentTimeMillis - 600000 : j - 2000, currentTimeMillis);
             UsageEvents.Event event = new UsageEvents.Event();
             String str = null;
+            int n = 0;
             while (queryEvents.hasNextEvent()) {
                 queryEvents.getNextEvent(event);
                 if (event.getEventType() == 1) {
                     str = event.getPackageName();
+                    n++;
+                    Trace.t("apps", "to front: " + str);
                 }
             }
             this.lastUsageQuery = currentTimeMillis;
             if (str == null || str.equals("com.android.systemui")) {
                 return;
             }
-            this.stage.ownAppOpen = str.equals(getPackageName());
+            boolean own = str.equals(getPackageName());
+            if (own != this.stage.ownAppOpen) {
+                Trace.d("apps", own ? "his own settings opened" : "left his own settings");
+            }
+            this.stage.ownAppOpen = own;
             if (this.stage.ownAppOpen) {
                 return; // his own settings: stays in the mode of the app you came from
             }
@@ -312,10 +334,63 @@ public final class SquibService extends Service {
      */
     void pollMusic() {
         if (this.audio != null && this.stage != null) {
+            boolean was = this.stage.musicOn;
             try {
                 this.stage.musicOn = this.audio.isMusicActive();
             } catch (RuntimeException e) {
                 this.stage.musicOn = false;
+                Trace.e("music", "music check failed", e);
+            }
+            String players = players();
+            boolean playersChanged = !players.equals(this.lastPlayers);
+            this.lastPlayers = players;
+            Trace.t("music", "check: " + (this.stage.musicOn ? "PLAYING" : "quiet") + ", app " + this.stage.pkg + " (" + this.stage.kind
+                    + "), audio mode " + this.audio.getMode() + ", headphones " + (Fun.listening ? "on" : "off")
+                    + ", music for " + String.format(java.util.Locale.US, "%.1f", Fun.musicFor) + "s"
+                    + (playersChanged ? ", players now: " + players : ""));
+            if (was != this.stage.musicOn) {
+                Trace.d("music", "music " + (this.stage.musicOn ? "STARTED" : "STOPPED") + " (android says), app " + this.stage.pkg);
+            }
+        }
+    }
+
+    String lastPlayers = "";
+
+    /** What Android lists as playing sound right now: the kind of sound (usage) and its state. No app names (Android hides them). */
+    String players() {
+        try {
+            List<AudioPlaybackConfiguration> list = this.audio.getActivePlaybackConfigurations();
+            if (list.isEmpty()) {
+                return "none";
+            }
+            StringBuilder sb = new StringBuilder();
+            for (AudioPlaybackConfiguration c : list) {
+                if (sb.length() > 0) {
+                    sb.append(" | ");
+                }
+                String s = c.toString().replaceAll("\\s+", " ");
+                sb.append("usage=").append(c.getAudioAttributes().getUsage()).append(" content=")
+                        .append(c.getAudioAttributes().getContentType()).append(" [").append(s).append("]");
+            }
+            return sb.toString();
+        } catch (RuntimeException e) {
+            return "unknown (" + e.getClass().getSimpleName() + ")";
+        }
+    }
+
+    /** Writes crashes to the log before Android handles them. */
+    static final class CrashLogger implements Thread.UncaughtExceptionHandler {
+        final Thread.UncaughtExceptionHandler next;
+
+        CrashLogger(Thread.UncaughtExceptionHandler next) {
+            this.next = next;
+        }
+
+        @Override
+        public void uncaughtException(Thread thread, Throwable err) {
+            Trace.e("crash", "crashed on " + thread.getName(), err);
+            if (next != null) {
+                next.uncaughtException(thread, err);
             }
         }
     }
@@ -336,7 +411,14 @@ public final class SquibService extends Service {
         this.screenReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                Trace.i("screen", intent.getAction().replace("android.intent.action.", "").toLowerCase(java.util.Locale.US)
+                        + " (headphones " + (Fun.listening ? "on" : "off") + ", music " + SquibService.this.stage.musicOn + " from before)");
+                if ("android.intent.action.USER_PRESENT".equals(intent.getAction())) {
+                    SquibService.this.pollMusic(); // unlocked: just for the log
+                    return;
+                }
                 if ("android.intent.action.SCREEN_OFF".equals(intent.getAction())) {
+                    Trace.flush();
                     SquibService.this.screenOn = false;
                     SquibService.this.screenOffAt = SystemClock.elapsedRealtime();
                     SquibService.this.handler.removeCallbacks(SquibService.this.frame);
@@ -348,6 +430,9 @@ public final class SquibService extends Service {
                     // while the phone was locked, the headphones come straight off instead of after the gap-between-songs wait.
                     SquibService.this.pollMusic();
                     if (!SquibService.this.stage.musicOn) {
+                        if (Fun.listening) {
+                            Trace.i("headphones", "OFF at once: screen came on and nothing is playing");
+                        }
                         Fun.listening = false;
                         Fun.listenOff = -1;
                         Fun.musicFor = 0;
@@ -359,6 +444,7 @@ public final class SquibService extends Service {
         };
         IntentFilter intentFilter = new IntentFilter("android.intent.action.SCREEN_OFF");
         intentFilter.addAction("android.intent.action.SCREEN_ON");
+        intentFilter.addAction("android.intent.action.USER_PRESENT");
         if (Build.VERSION.SDK_INT < 33) {
             registerReceiver(this.screenReceiver, intentFilter);
         } else {

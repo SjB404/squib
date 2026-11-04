@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.18.0). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.18.1). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -141,6 +141,10 @@ Walks to the bottom-right corner and sits down with popcorn. Kernels pop out now
 **Apps:** Netflix `com.netflix.mediaclient`, YouTube `com.google.android.youtube`, YouTube Kids `com.google.android.apps.youtube.kids`, Disney+ `com.disney.disneyplus`, Prime Video `com.amazon.avod.thirdpartyclient`, Max `com.wbd.stream`, HBO `com.hbo.hbonow`, Hulu `com.hulu.plus`, Twitch `tv.twitch.android.app`, Crunchyroll `com.crunchyroll.crunchyroid`, Plex `com.plexapp.android`, VLC `org.videolan.vlc`, Paramount+ `com.cbs.app`, Peacock `com.peacocktv.peacockandroid`, Google TV `com.google.android.videos`, MX Player `com.mxtech.videoplayer.ad`, Apple TV `com.apple.atve.androidtv.appletv`, BBC iPlayer `com.bbc.iplayer.android`, Channel 4 `com.channel4.ondemand`, Pluto TV `tv.pluto.android`, Tubi `com.tubitv`, Kick `com.kick.mobile`
 
 **Also:** apps not on any list that Android files under: Android category video.
+
+### Log (1.18.1)
+
+Everything he sees and does is written to a log in the app's own storage (about 2 MB, plus the one before it): screen on, off and unlock, every app change, every music check once a second (what Android says, the audio mode, and what kinds of sound are listed as playing), the headphones going on and off and why (or why not), activities starting and ending, every line he says, touches, settings, downloads of `squib.json`, and crashes with their details. **export log** in his settings saves it as a text file (with a header: versions, phone, permissions, settings); **clear log** empties it. The size is shown at the bottom of his settings. Levels: T trace (every check), D detail, I events, W problems, E errors.
 
 ### music (MUSIC)
 

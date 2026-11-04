@@ -6,6 +6,7 @@ public class SharedPreferences {
     public long getLong(String k, long d) { Object o = m.get(k); return o == null ? d : (Long) o; }
     public boolean getBoolean(String k, boolean d) { Object o = m.get(k); return o == null ? d : (Boolean) o; }
     public String getString(String k, String d) { Object o = m.get(k); return o == null ? d : (String) o; }
+    public java.util.Map<String, ?> getAll() { return new HashMap<>(m); }
     public Editor edit() { return new Editor(); }
     public class Editor {
         public Editor putInt(String k, int v) { m.put(k, v); return this; }

@@ -196,6 +196,8 @@ final class Fun {
     static int vibe; // vibe 0 nods along, 1 eyes shut, 2 a hand on the headphones
     /** Seconds music has been playing without a break, so a blip can't put them on. */
     static double musicFor, pkgSince;
+    /** Last reason the headphones didn't go on, so it's logged once per change. */
+    static String blockedWhy;
     /** The app on screen, and whether it's been quiet in it for a bit (games make sound as soon as they open). */
     static String listenPkg;
     static boolean quietInApp;
@@ -790,6 +792,8 @@ final class Fun {
     }
 
     static void start(SquibView v, int a) {
+        Trace.i("act", "start " + NAMES[a] + (autoPhone ? " (scroll-along)" : "") + (autoText ? " (chat app)" : "")
+                + (want >= 0 ? " version " + want : "") + ", app " + v.pkg + " (" + v.kindNow() + ")");
         double t = v.t;
         float d = v.d;
         act = a;
@@ -1396,6 +1400,9 @@ final class Fun {
     }
 
     static void end(SquibView v) {
+        if (act != NONE) {
+            Trace.i("act", "end " + NAMES[act] + " after " + Math.round(v.t - actStart) + "s");
+        }
         if (v.forcePlace != 0) { // back to where this app puts him
             v.forcePlace = 0;
             poof(v, center(v), v.posY - 8 * v.S);
@@ -3586,7 +3593,16 @@ final class Fun {
             // A music app: 1.5 seconds of music. Anywhere else: 3, so a short sound can't do it. Never while his own
             // settings are open (nothing plays there).
             boolean longEnough = musicFor >= (kind == Apps.Kind.MUSIC ? 1.5 : 3);
+            String why = !longEnough ? null : v.ownAppOpen ? "his own settings are open" : !v.visible() ? "he's hidden"
+                    : kind == Apps.Kind.MUSIC || other ? null : v.lastMediaVideo ? "last media app opened was a video app"
+                    : kind == Apps.Kind.GAME ? "game hasn't been quiet yet" : "app type " + kind + " can't start them";
+            if (why != null && !why.equals(blockedWhy)) {
+                Trace.d("headphones", "music playing " + String.format(java.util.Locale.US, "%.1f", musicFor) + "s but not putting them on: " + why);
+            }
+            blockedWhy = why;
             if (longEnough && !v.ownAppOpen && (kind == Apps.Kind.MUSIC || other) && v.visible()) {
+                Trace.i("headphones", "ON: music playing " + String.format(java.util.Locale.US, "%.1f", musicFor) + "s, app " + v.pkg
+                        + " (" + kind + "), last media app was video: " + v.lastMediaVideo + ", game quiet first: " + quietInApp);
                 listening = true;
                 beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
                 listenOn = t;
@@ -3603,6 +3619,8 @@ final class Fun {
         boolean otherSound = kind == Apps.Kind.WATCH || kind == Apps.Kind.HIDE; // video, calls, camera
         quietFor = v.musicOn ? 0 : quietFor + dt;
         if (otherSound || quietFor > 6) { // a few seconds' grace for the gap between songs
+            Trace.i("headphones", "OFF: " + (otherSound ? "app " + v.pkg + " (" + kind + ") has its own sound" : "quiet for 6s") + ", on for "
+                    + Math.round(t - listenOn) + "s");
             listening = false;
             listenOff = t;
             vibe = 0;

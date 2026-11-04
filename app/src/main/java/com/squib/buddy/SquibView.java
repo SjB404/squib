@@ -260,6 +260,7 @@ final class SquibView extends View {
     }
 
     void reloadPrefs() {
+        Trace.d("settings", "reloaded: " + this.prefs.getAll());
         this.S = Math.max(2, Math.round(this.prefs.getInt("size", 2) * this.d));
         this.T = Math.max(2, Math.round(this.d * 1.2f));
         this.fontPx = FONT_SIZES[Math.max(0, Math.min(2, this.prefs.getInt("textSize", 1)))];
@@ -364,6 +365,7 @@ final class SquibView extends View {
         }
         this.pkg = str;
         Apps.Kind kindOf = Apps.kindOf(getContext(), str);
+        Trace.d("app", "now " + str + " (" + kindOf + (kindOf == this.kind ? ", same mode)" : ", was " + this.kind + ")"));
         if (kindOf == Apps.Kind.MUSIC) {
             this.lastMediaVideo = false;
         } else if (kindOf == Apps.Kind.WATCH) {
@@ -455,6 +457,9 @@ final class SquibView extends View {
     }
 
     void setMotion(Motion motion) {
+        if (motion != this.motion) {
+            Trace.t("motion", this.motion + " -> " + motion);
+        }
         this.motion = motion;
         this.modeTime = 0.0d;
     }
@@ -787,6 +792,7 @@ final class SquibView extends View {
                 say(Pick.one(Lines.BEDTIME), 1.0d);
             }
             this.sleptTonight = true;
+            Trace.i("bedtime", "lies down to sleep");
             this.bedAt = -1.0d;
             this.zzzIn = 1.0d;
             setMotion(Motion.SLEEP);
@@ -794,6 +800,7 @@ final class SquibView extends View {
     }
 
     void onScreenOn(double d) {
+        Trace.d("screen", "on after " + Math.round(d) + "s off");
         this.lastT = SystemClock.elapsedRealtime() / 1000.0d;
         if (d > 300.0d) {
             this.activeSecs = 0.0d;
@@ -1080,6 +1087,7 @@ final class SquibView extends View {
     }
 
     void startPetting() {
+        Trace.d("touch", "petting");
         this.petting = true;
         this.heartIn = 0.0d;
         if (this.motion == Motion.SLEEP) {
@@ -1092,6 +1100,7 @@ final class SquibView extends View {
     }
 
     void tap() {
+        Trace.d("touch", "tap");
         double d = this.t;
         boolean z = d - this.lastTapAt < 0.3d;
         this.lastTapAt = d;
@@ -1127,6 +1136,7 @@ final class SquibView extends View {
     }
 
     void squirt() {
+        Trace.d("touch", "ink");
         if (this.motion == Motion.DRAG) {
             return;
         }
@@ -1144,6 +1154,7 @@ final class SquibView extends View {
     }
 
     void feed() {
+        Trace.d("touch", "feed (shown " + visible() + ", shrimp already out " + this.shrimpOn + ")");
         if (this.shrimpOn || !visible()) {
             return;
         }
@@ -1217,6 +1228,7 @@ final class SquibView extends View {
     }
 
     void say(String str, double d) {
+        Trace.d("say", str);
         String replace = str.replace("{time}", new SimpleDateFormat("h:mm a", Locale.US).format(new Date()).toLowerCase(Locale.US)).replace("{day}", String.valueOf(day())).replace("{fed}", String.valueOf(this.prefs.getInt("fed", 0))).replace("{boops}", String.valueOf(this.prefs.getInt("boops", 0))).replace("{pets}", String.valueOf(this.prefs.getInt("pets", 0)));
         this.speech = replace;
         this.text.setTextSize(this.fontPx);
