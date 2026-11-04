@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.17.0). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.17.1). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -156,7 +156,7 @@ Walks along the bottom. When standing still he bops to a beat and music notes fl
 
 ### scrolling (SCROLL)
 
-Gets his own little phone out and scrolls along with you: a tiny endless feed on its screen, thumb flicks, sometimes stopping on a post, now and then a reaction face. Sessions last from under a minute to several minutes, with short breaks in between (when he walks around or fidgets). Every so often he holds up a big picture of something funny he found and says something about it (see PHONE below). Scrolling along doesn't count as an activity, so it doesn't push back his other activities.
+Gets his own little phone out and scrolls along with you: screen facing him (you see the back, in a random case colour, and the screen lights his face), thumb flicks, sometimes stopping on a post, now and then a reaction face. Sessions last from under a minute to several minutes, with short breaks in between (when he walks around or fidgets). Every so often he holds up a big picture of something funny he found and says something about it (see PHONE below). Scrolling along doesn't count as an activity, so it doesn't push back his other activities.
 
 - Talks every 35 seconds to 3 minutes: 30% of the time a SCROLL line, otherwise normal chatter.
 - Every 15 minutes of scrolling (`scrollCheckMinutes`), no limit: a SCROLL_LONG check-in (needs break reminders on). The count resets after 5 minutes away from scrolling apps.
@@ -167,7 +167,7 @@ Gets his own little phone out and scrolls along with you: a tiny endless feed on
 
 ### chat (CHAT)
 
-Sits on a cloud near the top right (a bit lower than in other apps, so there's room over his head) and texts on his own phone (1.17.0): thumbs tapping, keys lighting up, a little chat on his screen. Message bubbles go back and forth over his head like a text chat in a film: his on the right in one colour per session, theirs on the left in white, newest at the bottom pushing the older ones up until they fade. Sometimes a photo or a heart instead of words, a "..." bubble while they type, double texts from either side, long waits for a reply, and a reaction to what they sent (happy, surprised, now and then annoyed). Sessions last from 20 seconds to several minutes, with breaks for fidgets in between, and don't count as activities.
+Sits on a cloud near the top right (a bit lower than in other apps, so there's room over his head) and texts on his own phone (1.17.0): thumbs tapping, phone held up facing him (you see the back of it, in a random case colour, and the screen lights his face). Message bubbles go back and forth over his head like a text chat in a film: his on the right in one colour per session, theirs on the left in white, newest at the bottom pushing the older ones up until they fade. Sometimes a photo or a heart instead of words, a "..." bubble while they type, double texts from either side, long waits for a reply, and a reaction to what they sent (happy, surprised, now and then annoyed). Sessions last from 20 seconds to several minutes, with breaks for fidgets in between, and don't count as activities.
 
 - Never chatters on his own here.
 

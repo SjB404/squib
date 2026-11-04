@@ -178,7 +178,10 @@ final class Fun {
     static final int[] HEART_ROWS = {0x36, 0x7F, 0x7F, 0x3E, 0x1C, 0x08}; // 7 wide, one bit per pixel
     static boolean autoText;
     static double nextTextAt, typeFrom;
-    static int textColor, textPhase, burst; // textPhase 0 he types, 1 waits for a reply, 2 they're typing
+    static int textColor, textPhase, burst;
+    /** His phone case: a PAIRS index, picked each time he gets it out (not red, coral or orange: they vanish against him). */
+    static int phoneCase = 2;
+    static final int[] CASE_COLORS = {1, 2, 3, 4, 5, 8, 9, 10}; // textPhase 0 he types, 1 waits for a reply, 2 they're typing
 
     // ---------- headphones: on while music is actually playing in a music app ----------
     /** On while music plays. listenOn / listenOff: when they went on or came off (-1: never), for the animation. */
@@ -1066,6 +1069,7 @@ final class Fun {
                 actEnd = t + span(4, 300); // a few seconds, or minutes of it
                 break;
             case PHONE:
+                phoneCase = CASE_COLORS[rng.nextInt(CASE_COLORS.length)];
                 feedSeed = rng.nextInt();
                 feedOff = rng.nextInt(1000);
                 scrollVel = 0;
@@ -1105,6 +1109,7 @@ final class Fun {
                 actEnd = t + span(5, 240); // a couple of shuffles, or minutes of it
                 break;
             case TEXT:
+                phoneCase = CASE_COLORS[rng.nextInt(CASE_COLORS.length)];
                 textColor = TEXT_COLORS[rng.nextInt(TEXT_COLORS.length)];
                 burst = 0;
                 if (rng.nextBoolean()) { // he starts it
@@ -1174,6 +1179,31 @@ final class Fun {
                 v.kick(-1.5);
                 actEnd = t + rand(1.8, 2.9);
                 break;
+        }
+    }
+
+    /**
+     * His phone held up in front of him, seen from the back: a case in this session's colour, the camera in the
+     * corner, and the screen's light on his face.
+     */
+    static void phoneBack(SquibView v, Canvas c, float lift) {
+        int top = top(v), L = 6 - v.squashLevel, R = 21 + v.squashLevel;
+        for (int y = top + 1; y <= armRow(v) + 2; y++) { // screen light on his face
+            for (int x = L + 1; x <= R - 1; x++) {
+                dot(v, c, x, y, 0x1CE4F2FF, 255, lift);
+            }
+        }
+        int px = 12, py = armRow(v) + 1;
+        char light = Props.PAIRS[phoneCase].charAt(0), dark = Props.PAIRS[phoneCase].charAt(1);
+        for (int y = 0; y < 7; y++) {
+            for (int x = 0; x < 5; x++) {
+                boolean edge = x == 0 || x == 4 || y == 0 || y == 6;
+                char ch = edge ? dark : light;
+                if ((x == 1 || x == 2) && (y == 1 || y == 2) && !(x == 2 && y == 2)) {
+                    ch = 'o'; // camera lenses
+                }
+                dot(v, c, px + x, py + y, Art.color(ch), 255, lift);
+            }
         }
     }
 
@@ -4057,29 +4087,7 @@ final class Fun {
                     }
                     break;
                 }
-                // his little phone, screen facing him: an endless feed
-                int px = 12, py = armRow(v) + 2;
-                for (int y = 0; y < 7; y++) {
-                    for (int x = 0; x < 5; x++) {
-                        char ch = 'e';
-                        if (x >= 1 && x <= 3 && y >= 1 && y <= 5) {
-                            int line = (int) Math.floor(feedOff) + (y - 1);
-                            int post = Math.floorDiv(line, 5), at = Math.floorMod(line, 5);
-                            int h = (post * 0x9E3779B1) ^ feedSeed;
-                            h ^= h >>> 15;
-                            h *= 0x2C1B3C6D;
-                            h ^= h >>> 12;
-                            if (at == 0) {
-                                ch = x == 1 ? Props.light(Math.floorMod(h, Props.BRIGHT)) : 'q';
-                            } else if (at <= 3) {
-                                ch = Props.light(Math.floorMod(h >>> 8, Props.PAIRS.length));
-                            } else {
-                                ch = 'w';
-                            }
-                        }
-                        dot(v, c, px + x, py + y, Art.color(ch), 255, lift);
-                    }
-                }
+                phoneBack(v, c, lift); // the screen faces him, so you see the back
                 break;
             }
             case DICE: {
@@ -4118,24 +4126,9 @@ final class Fun {
                 }
                 break;
             }
-            case TEXT: { // his phone, screen facing him: a chat, with the keyboard up while he types
-                int px = 12, py = armRow(v) + 2;
-                boolean typing = textPhase == 0 && v.t >= typeFrom;
-                for (int y = 0; y < 7; y++) {
-                    for (int x = 0; x < 5; x++) {
-                        char ch = 'e';
-                        if (x >= 1 && x <= 3 && y >= 1 && y <= 5) {
-                            if (typing && y >= 4) {
-                                ch = ((x + y + (int) (v.t * 9)) % 3 == 0) ? 'w' : 'q'; // keys lighting up
-                            } else {
-                                ch = (y % 2 == 1) == (x == 3) ? Props.light(textColor) : 'w';
-                            }
-                        }
-                        dot(v, c, px + x, py + y, Art.color(ch), 255, lift);
-                    }
-                }
+            case TEXT:
+                phoneBack(v, c, lift); // the screen faces him, so you see the back
                 break;
-            }
             case BUBBLEWRAP: {
                 int[] tint = WRAP_TINTS[wrapTint];
                 int w = wrapCols * 2 + 1, h = wrapRows * 2 + 1;

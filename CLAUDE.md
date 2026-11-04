@@ -42,7 +42,8 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - Lengths: activities and the bigger fidgets use `Fun.span(lo, hi)` so they run anywhere from seconds to minutes. Don't make everything a few seconds long.
 - The user doesn't care about squids: keep squid talk rare (a few facts, nothing more). He's a squid in looks and mechanics (ink, shrimp), not in what he talks about.
 - Voice lines are neutral and dry (the user asked for this in 1.13, replacing the earlier sarcastic tone): plain observations about the phone, the time, what he's doing. No put-downs aimed at the user, no lecturing about screen time or sleep (just state the time), no moping ("they always leave"), not cute or corny, no puns.
-- Every change the user asks for also adds at least one new activity or fidget (the user asked for this).
+- Every change the user asks for also adds at least one new activity or fidget (the user asked for this). Not for small fixes.
+- Versions: small fixes bump only the last number (1.17.0 to 1.17.1); new features bump the middle one.
 - Versions should be procedural: a new colour, pattern or shape is data fed to one animation (see `Props.java`, `Fun.tint`, `Fun.ball`), not a new hand-drawn animation.
 - A new activity or fidget needs: its id, an entry in `NAMES`, `WHERE` and `WEIGHT` (fidgets go after `LAST_ACTIVITY`), a case in `start`, `update` and `draw`, and if it has versions, a list in `Fun.variantNames` and `choose` / `chooseW` in `start` so the picker in settings can ask for one. `Fun.label` gives the picker name if the id doesn't read well.
 - `tools/sim/run.sh picks` starts every activity and every version through the picker, from the floor and from a cloud, and fails if one doesn't start, end or go back to its spot. `SIM_OPTS="-Dwant=N" tools/sim/run.sh sheets NAME` renders version N.
