@@ -25,6 +25,16 @@ Package `com.squib.buddy`, minSdk 26, targetSdk 34.
 - With the Android SDK: `./gradlew assembleDebug` (output in `app/build/outputs/apk/debug/`). Copy the result to `apk/Squib.apk` for a release.
 - Without it: `tools/build-apk.sh`.
 
+## Design language
+
+Everything drawn should look like it belongs to him:
+
+- One pixel size: his grid pixel (`S`). Props, bubbles and anything held or worn are built from whole grid pixels, not the smaller `T` pixels. (The speech bubble, music notes, Zs and hearts are the older exceptions.)
+- Flat, solid colours. No see-through overlays, glows, gradients or shading on him or his props.
+- Few colours per thing, simple blocky shapes, no outlines unless the thing is dark itself.
+- Black (`SquibView.EYE`, same as his eyes) for things he wears, like the headphones: it shows on his coral body on any app, light or dark.
+- Square corners; a "rounded" look comes from leaving a corner block out, not from smaller pixels.
+
 ## Rules
 
 - Lines go in `squib.json`, then run `python3 tools/gen_lines.py`. Plain keyboard characters only: the pixel font can't show emoji, accents or curly quotes. `{mins}` only works in SCROLL_LONG.

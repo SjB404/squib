@@ -233,8 +233,18 @@ public final class MainActivity extends Activity {
         textButton.setText("text size: " + SIZE_NAMES[prefs.getInt("textSize", 1)] + "   (tap to change)");
         long today = System.currentTimeMillis() / 86400000L;
         stats.setText("squib " + version() + "  ·  day " + ((today - prefs.getLong("born", today)) + 1) + "  ·  " + prefs.getInt("fed", 0) + " shrimp eaten  ·  "
-                + prefs.getInt("boops", 0) + " boops  ·  " + prefs.getInt("pets", 0) + " pets");
+                + prefs.getInt("boops", 0) + " boops  ·  " + prefs.getInt("pets", 0) + " pets"
+                + "\nmusic check: " + (musicPlaying() ? "android says something is playing" : "nothing playing"));
         Remote.refreshRow(this);
+    }
+
+    /** What Android tells squib about music right now (for checking the headphones). */
+    boolean musicPlaying() {
+        try {
+            return ((android.media.AudioManager) getSystemService(android.media.AudioManager.class)).isMusicActive();
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     /** A row with a time and - / + buttons that move it by half an hour. Returns the label. */

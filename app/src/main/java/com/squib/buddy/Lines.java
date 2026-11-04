@@ -1373,6 +1373,22 @@ final class Lines {
             "none left on this one.",
             "*checks for any he missed*",
             "done. there's more."};
+    static String[] TOSS = {
+            "paper toss.",
+            "bin's over there.",
+            "*scrunches up some paper*",
+            "from here. easy.",
+            "one more."};
+    static String[] TOSS_IN = {
+            "in.",
+            "that counts.",
+            "clean.",
+            "*nods*"};
+    static String[] TOSS_MISS = {
+            "off the rim.",
+            "close.",
+            "the bin moved.",
+            "*looks at it*"};
 
     /** A line group by name, or null if there's no such group. */
     static String[] get(String name) {

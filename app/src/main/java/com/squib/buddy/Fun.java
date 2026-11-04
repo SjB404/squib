@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 5, 3};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 5, 3, 4};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -161,9 +161,9 @@ final class Fun {
 
     /** Bubble wrap: bubbles across and down, tint, mode (0 one at a time, 1 row by row, 2 twists it), which are popped. */
     static final String[] WRAP_MODES = {"one at a time", "row by row", "twists it"};
-    /** Each tint: sheet, bubble, popped bubble (ARGB, a bit see-through). */
-    static final int[][] WRAP_TINTS = {{0x80DDEBF2, 0xF0F7FCFF, 0xA0A9BBC6}, {0x8090C8F0, 0xF0D6EEFF, 0xA06C9EC4},
-            {0x80F4B8D2, 0xF0FFE3EF, 0xA0C98AA6}, {0x80A8DDB0, 0xF0E2FBE6, 0xA079AE83}, {0x80F2E2A0, 0xF0FFF7D6, 0xA0C4B26A}};
+    /** Each tint: sheet, bubble, popped bubble. Solid colours, like the rest of him. */
+    static final int[][] WRAP_TINTS = {{0xFFC9DCE6, 0xFFF4FAFF, 0xFFA9BBC6}, {0xFF8FC2EA, 0xFFD6EEFF, 0xFF6C9EC4},
+            {0xFFF0AFCB, 0xFFFFE3EF, 0xFFC98AA6}, {0xFFA3D9AC, 0xFFE2FBE6, 0xFF79AE83}, {0xFFEBD994, 0xFFFFF7D6, 0xFFC4B26A}};
     static final String[] WRAP_POP = {"w.w", ".w.", "w.w"};
     static int wrapCols, wrapRows, wrapTint, wrapMode, wrapLeft, wrapHits;
     static final boolean[] wrapPopped = new boolean[40];
@@ -171,7 +171,7 @@ final class Fun {
     static double wrapPressAt = -1, wrapTwist = -1;
 
     // ---------- texting: thumbs on his phone, message bubbles going back and forth over his head ----------
-    /** Each message: {born, side (1 his, -1 theirs), width (T pixels), kind (0 text, 1 picture, 2 heart, 3 typing dots), seed, stack offset (T pixels, eased), gone at (-1: still up)}. */
+    /** Each message: {born, side (1 his, -1 theirs), width (his pixels), kind (0 text, 1 picture, 2 heart, 3 typing dots), seed, stack offset (his pixels, eased), gone at (-1: still up)}. */
     static final ArrayList<double[]> texts = new ArrayList<double[]>();
     /** Bubble colours for his messages: yellow, blue, green, purple, pink, teal. */
     static final int[] TEXT_COLORS = {1, 2, 3, 4, 5, 8};
@@ -182,6 +182,13 @@ final class Fun {
     /** His phone case: a PAIRS index, picked each time he gets it out (not red, coral or orange: they vanish against him). */
     static int phoneCase = 2;
     static final int[] CASE_COLORS = {1, 2, 3, 4, 5, 8, 9, 10}; // textPhase 0 he types, 1 waits for a reply, 2 they're typing
+
+    // ---------- paper toss: crumples paper and throws it at a bin on the floor ----------
+    /** Bin colour (a PAIRS index), bin x on screen, throws left, whether this throw goes in, the paper ball's state (0 none, 1 crumpling, 2 flying, 3 on the floor). */
+    static int binColor, tossesLeft, paperState;
+    static boolean tossIn;
+    static float binX;
+    static int tossWant = -1;
 
     // ---------- headphones: on while music is actually playing in a music app ----------
     /** On while music plays. listenOn / listenOff: when they went on or came off (-1: never), for the animation. */
@@ -500,6 +507,7 @@ final class Fun {
             case CARDS: return "card shuffle";
             case BUBBLEWRAP: return "bubble wrap";
             case TEXT: return "texting";
+            case TOSS: return "paper toss";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -528,6 +536,7 @@ final class Fun {
             case PEN: return Props.PAIR_NAMES;
             case CARDS: return new String[]{"riffle", "card spring", "drops them"};
             case BUBBLEWRAP: return WRAP_MODES;
+            case TOSS: return new String[]{"gets them in", "misses"};
             default: return null;
         }
     }
@@ -1127,6 +1136,17 @@ final class Fun {
                 }
                 actEnd = t + (autoText ? span(20, 300) : span(8, 150));
                 break;
+            case TOSS:
+                side = center(v) < v.screenW / 2f ? 1 : -1; // throws toward the middle of the screen
+                v.facing = side;
+                binColor = CASE_COLORS[rng.nextInt(CASE_COLORS.length)];
+                binX = clamp(center(v) + side * (float) rand(70, 120) * d, 10 * d, v.screenW - 10 * d);
+                tossesLeft = (int) span(1, 8);
+                tossWant = want;
+                paperState = 1;
+                mark = t + rand(0.6, 1.2); // crumpling
+                actEnd = t + 600;
+                break;
             case BUBBLEWRAP:
                 wrapMode = chooseW(5, 3, 2);
                 newWrap();
@@ -1189,15 +1209,9 @@ final class Fun {
 
     /**
      * His phone held up in front of him, seen from the back: a case in this session's colour, the camera in the
-     * corner, and the screen's light on his face.
+     * corner.
      */
     static void phoneBack(SquibView v, Canvas c, float lift) {
-        int top = top(v), L = 6 - v.squashLevel, R = 21 + v.squashLevel;
-        for (int y = top + 1; y <= armRow(v) + 2; y++) { // screen light on his face
-            for (int x = L + 1; x <= R - 1; x++) {
-                dot(v, c, x, y, 0x1CE4F2FF, 255, lift);
-            }
-        }
         int px = 12, py = armRow(v) + 1;
         char light = Props.PAIRS[phoneCase].charAt(0), dark = Props.PAIRS[phoneCase].charAt(1);
         for (int y = 0; y < 7; y++) {
@@ -1215,7 +1229,7 @@ final class Fun {
     /** A message bubble over his head: side 1 his, -1 theirs. kind 0 text, 1 picture, 2 heart, 3 "..." typing. */
     static void addText(SquibView v, int side, int kind) {
         int seed = rng.nextInt(1 << 24);
-        int w = kind == 1 ? 14 : kind == 2 ? 11 : kind == 3 ? 11 : 10 + rng.nextInt(17);
+        int w = kind == 1 || kind == 2 || kind == 3 ? 7 : 5 + rng.nextInt(7); // in his own pixels
         texts.add(new double[]{v.t, side, w, kind, seed, -textH(kind, seed), -1});
     }
 
@@ -1227,9 +1241,9 @@ final class Fun {
         }
     }
 
-    /** Height of a bubble in T pixels. */
+    /** Height of a bubble in his pixels (S). */
     static int textH(int kind, int seed) {
-        return kind == 1 ? 12 : kind == 2 ? 9 : kind == 3 ? 5 : seed % 3 == 0 ? 7 : 5;
+        return kind == 1 || kind == 2 ? 6 : kind == 3 ? 3 : seed % 3 == 0 ? 5 : 3;
     }
 
     /** Moves the bubbles: newest at the bottom, older ones pushed up, then fading. */
@@ -1243,8 +1257,8 @@ final class Fun {
         for (int i = texts.size() - 1; i >= 0; i--) {
             double[] m = texts.get(i);
             m[5] += (stack - m[5]) * Math.min(1, dt * 9);
-            stack += textH((int) m[3], (int) m[4]) + 2;
-            if (m[6] < 0 && (n >= 4 || t - m[0] > 14)) {
+            stack += textH((int) m[3], (int) m[4]) + 1;
+            if (m[6] < 0 && (n >= 3 || t - m[0] > 14)) {
                 m[6] = t;
             }
             if (m[6] >= 0 && t - m[6] > 0.5) {
@@ -1262,69 +1276,69 @@ final class Fun {
         ink.setColor(0xFF1D1D1D);
     }
 
-    /** Draws the bubbles in small pixels (T), like a chat in a film: his on the right, theirs on the left. */
+    /**
+     * Draws the bubbles like a chat in a film, his on the right, theirs on the left. Built like he is: his pixel
+     * size, square blocks, flat colours, words as solid bars.
+     */
     static void drawTexts(SquibView v, Canvas c, float lift) {
         if (texts.isEmpty()) {
             return;
         }
-        float T = v.T, S = v.S, cx = center(v);
-        float base = sy(v, top(v), lift) - 4 * S; // clear of the headphones
+        float S = v.S, cx = center(v);
+        float base = sy(v, top(v), lift) - 2 * S;
         double t = v.t;
         for (double[] m : texts) {
             int side = (int) m[1], kind = (int) m[3], seed = (int) m[4];
             int w = (int) m[2], h = textH(kind, seed);
             int a = m[6] >= 0 ? (int) (255 * (1 - (t - m[6]) / 0.5)) : (int) Math.min(255, 255 * (t - m[0]) / 0.15);
-            float bottom = base - Math.round(m[5]) * T, top = bottom - h * T;
-            float left = side > 0 ? cx + 14 * T - w * T : cx - 14 * T;
-            left = clamp(left, 4 * v.d, v.screenW - 4 * v.d - w * T);
-            float right = left + w * T;
+            float bottom = base - Math.round(m[5]) * S, top = bottom - h * S;
+            float left = side > 0 ? cx + 10 * S - w * S : cx - 10 * S;
+            left = Math.round(clamp(left, 4 * v.d, v.screenW - 4 * v.d - w * S));
+            float right = left + w * S;
             boolean mine = side > 0;
-            int fill = mine ? Art.color(Props.light(textColor)) : Art.color('p');
-            int mark = mine ? Art.color(Props.PAIRS[textColor].charAt(1)) : Art.color('h');
-            rectT(c, left + T, top, right - T, bottom, fill, a); // rounded box
-            rectT(c, left, top + T, right, bottom - T, fill, a);
-            float tail = mine ? right - T : left; // little tail at the bottom corner, on the sender's side
-            rectT(c, tail, bottom - T, tail + T, bottom + T, fill, a);
-            int r = seed;
+            int fill = mine ? Art.color(Props.light(textColor)) : Art.color('w');
+            int mark = mine ? Art.color(Props.PAIRS[textColor].charAt(1)) : Art.color('q');
+            rectT(c, left, top, right, bottom, fill, a);
+            float tail = mine ? right - S : left; // one block hanging off the sender's corner
+            rectT(c, tail, bottom, tail + S, bottom + S, fill, a);
             switch (kind) {
                 case 1: { // a photo: sky, ground, sun
                     int sky = Props.light(new int[]{2, 8, 4, 1}[seed % 4]), ground = Props.light(new int[]{3, 3, 1, 5}[(seed >> 3) % 4]);
-                    rectT(c, left + 2 * T, top + 2 * T, right - 2 * T, top + 6 * T, Art.color((char) sky), a);
-                    rectT(c, left + 2 * T, top + 6 * T, right - 2 * T, bottom - 2 * T, Art.color((char) ground), a);
-                    float sx0 = left + (3 + (seed >> 6) % 6) * T;
-                    rectT(c, sx0, top + 3 * T, sx0 + 2 * T, top + 5 * T, Art.color('w'), a);
+                    rectT(c, left + S, top + S, right - S, top + 3 * S, Art.color((char) sky), a);
+                    rectT(c, left + S, top + 3 * S, right - S, bottom - S, Art.color((char) ground), a);
+                    float sx0 = left + (1 + (seed >> 6) % 4) * S;
+                    rectT(c, sx0, top + S, sx0 + S, top + 2 * S, Art.color('w'), a);
                     break;
                 }
                 case 2: { // a heart
-                    for (int y = 0; y < 6; y++) {
-                        for (int x = 0; x < 7; x++) {
-                            if ((HEART_ROWS[y] >> (6 - x) & 1) != 0) {
-                                rectT(c, left + (2 + x) * T, top + (2 + y) * T, left + (3 + x) * T, top + (3 + y) * T, Art.color('r'), a);
+                    String[] heart = {".r.r.", "rrrrr", ".rrr.", "..r.."};
+                    for (int y = 0; y < 4; y++) {
+                        for (int x = 0; x < 5; x++) {
+                            if (heart[y].charAt(x) == 'r') {
+                                rectT(c, left + (1 + x) * S, top + (1 + y) * S, left + (2 + x) * S, top + (2 + y) * S, Art.color('r'), a);
                             }
                         }
                     }
                     break;
                 }
-                case 3: { // "..." while they type
+                case 3: { // "..." while they type: the dots light up in turn
                     int on = (int) (t * 3) % 3;
                     for (int k = 0; k < 3; k++) {
-                        float x = left + (3 + k * 2) * T, y = top + 2 * T - (k == on ? T : 0);
-                        rectT(c, x, y, x + T, y + T, k == on ? mark : Art.color('q'), a);
+                        float x = left + (1 + k * 2) * S;
+                        rectT(c, x, top + S, x + S, top + 2 * S, k == on ? Art.color('h') : mark, a);
                     }
                     break;
                 }
-                default: { // lines of words
-                    int lines = h == 7 ? 2 : 1;
+                default: { // a line or two of words: solid bars, a gap between words
+                    int lines = h == 5 ? 2 : 1;
                     for (int li = 0; li < lines; li++) {
-                        float y = top + (2 + li * 2) * T;
-                        float end = li == lines - 1 && lines > 1 ? left + (4 + (seed >> 4) % Math.max(1, w - 6)) * T : right - 2 * T;
-                        float x = left + 2 * T;
-                        while (x < end - T) {
-                            r = r * 1103515245 + 12345;
-                            int len = 2 + ((r >>> 16) & 3);
-                            float x1 = Math.min(end, x + len * T);
-                            rectT(c, x, y, x1, y + T, mark, a);
-                            x = x1 + T;
+                        float y = top + (1 + li * 2) * S;
+                        int len = li == lines - 1 && lines > 1 ? 2 + (seed >> 4) % Math.max(1, w - 4) : w - 2;
+                        int gap = len >= 5 ? 1 + (seed >> (8 + li)) % (len - 3) : -1;
+                        for (int x = 0; x < len; x++) {
+                            if (x != gap) {
+                                rectT(c, left + (1 + x) * S, y, left + (2 + x) * S, y + S, mark, a);
+                            }
                         }
                     }
                     break;
@@ -2857,6 +2871,58 @@ final class Fun {
                 }
                 break;
             }
+            case TOSS: {
+                boolean r = side > 0;
+                v.lookX = side;
+                float g = 900 * d;
+                if (paperState == 1) { // scrunching it up in both hands
+                    int k = ((int) (t * 8)) % 2;
+                    arm(v, false, 1 + k);
+                    arm(v, true, 2 - k);
+                    v.lookY = 1;
+                    if (t >= mark) { // throws: aimed to land in the bin, or not
+                        tossIn = tossWant == 0 || (tossWant < 0 && rng.nextDouble() < 0.6);
+                        ox = sx(v, handPx(v, r) + 0.5f);
+                        oy = sy(v, handPy(v, r) - 1, v.lift());
+                        float tx = binX + (tossIn ? 0 : (rng.nextBoolean() ? 1 : -1) * (float) rand(6, 9) * S);
+                        float ty = v.posY - 6 * S; // top of the bin
+                        float time = (float) rand(0.6, 0.85);
+                        ovx = (tx - ox) / time;
+                        ovy = (ty - oy - 0.5f * g * time * time) / time;
+                        paperState = 2;
+                        arm(v, r, 2);
+                        v.kick(1);
+                    }
+                } else if (paperState == 2) { // in the air
+                    arm(v, r, 2);
+                    ovy += g * f;
+                    ox += ovx * f;
+                    oy += ovy * f;
+                    float binTop = v.posY - 6 * S;
+                    if (ovy > 0 && oy >= binTop && Math.abs(ox - binX) <= 2.5f * S) { // in
+                        paperState = 0;
+                        v.happyFor = 1.2;
+                        v.kick(1.5);
+                        maybeSay(v, "TOSS_IN", 0.2);
+                        mark = t + rand(0.8, 1.6);
+                    } else if (oy >= v.posY - S) { // on the floor
+                        oy = v.posY - S;
+                        paperState = 3;
+                        v.annoyedFor = 0.8;
+                        maybeSay(v, "TOSS_MISS", 0.2);
+                        mark = t + rand(1.2, 2.0);
+                    }
+                } else if (t >= mark) { // the next one, or done
+                    tossesLeft--;
+                    if (tossesLeft <= 0) {
+                        end(v);
+                        break;
+                    }
+                    paperState = 1;
+                    mark = t + rand(0.5, 1.1);
+                }
+                break;
+            }
             case BUBBLEWRAP: {
                 v.lookX = 0;
                 v.lookY = 1;
@@ -3517,7 +3583,10 @@ final class Fun {
             // starts if it was quiet for a while in that game first (you put music on during it).
             boolean other = kind != Apps.Kind.WATCH && kind != Apps.Kind.HIDE && kind != Apps.Kind.SCROLL
                     && (kind != Apps.Kind.GAME || quietInApp) && !v.lastMediaVideo;
-            if (musicFor >= 1.5 && (kind == Apps.Kind.MUSIC || other) && v.visible()) {
+            // A music app: 1.5 seconds of music. Anywhere else: 3, so a short sound can't do it. Never while his own
+            // settings are open (nothing plays there).
+            boolean longEnough = musicFor >= (kind == Apps.Kind.MUSIC ? 1.5 : 3);
+            if (longEnough && !v.ownAppOpen && (kind == Apps.Kind.MUSIC || other) && v.visible()) {
                 listening = true;
                 beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
                 listenOn = t;
@@ -3587,21 +3656,16 @@ final class Fun {
             return;
         }
         int L = 6 - v.squashLevel, R = 21 + v.squashLevel, top = top(v) + dy;
-        int light = Art.color('w'), dark = Art.color('q'), band = Art.color('q'); // all light: his phone is in dark mode
-        for (int x = L + 1; x <= R - 1; x++) { // band
-            dot(v, c, x, top - 2, band, a, lift);
+        // Same black as his eyes, solid blocks, sitting on his head: drawn like the rest of him, so it shows on any app.
+        int ink = SquibView.EYE;
+        for (int x = L - 1; x <= R + 1; x++) { // band along the top of his head
+            dot(v, c, x, top, ink, a, lift);
         }
-        dot(v, c, L, top - 1, band, a, lift);
-        dot(v, c, R, top - 1, band, a, lift);
-        dot(v, c, L - 1, top - 1, band, a, lift);
-        dot(v, c, R + 1, top - 1, band, a, lift);
-        for (int y = top; y <= top + 3; y++) { // cups
-            dot(v, c, L - 2, y, dark, a, lift);
-            dot(v, c, L - 1, y, light, a, lift);
-            dot(v, c, L, y, light, a, lift);
-            dot(v, c, R, y, light, a, lift);
-            dot(v, c, R + 1, y, light, a, lift);
-            dot(v, c, R + 2, y, dark, a, lift);
+        for (int y = top + 1; y <= top + 3; y++) { // cups, sticking out from the sides of his head
+            dot(v, c, L - 2, y, ink, a, lift);
+            dot(v, c, L - 1, y, ink, a, lift);
+            dot(v, c, R + 1, y, ink, a, lift);
+            dot(v, c, R + 2, y, ink, a, lift);
         }
     }
 
@@ -4146,6 +4210,30 @@ final class Fun {
             case TEXT:
                 phoneBack(v, c, lift); // the screen faces him, so you see the back
                 break;
+            case TOSS: {
+                // the bin: solid blocks, a darker rim, sitting on the floor
+                char light = Props.PAIRS[binColor].charAt(0), dark = Props.PAIRS[binColor].charAt(1);
+                float bx0 = Math.round(binX - 2.5f * S), floor = Math.round(v.posY);
+                rectT(c, bx0, floor - 6 * S, bx0 + 5 * S, floor - 5 * S, Art.color(dark), 255);
+                rectT(c, bx0 + S * 0.0f, floor - 5 * S, bx0 + 5 * S, floor, Art.color(light), 255);
+                rectT(c, bx0 + 2 * S, floor - 4 * S, bx0 + 3 * S, floor - S, Art.color(dark), 255); // a stripe
+                // the paper ball: 2 x 2, white with a grey corner
+                float px0, py0;
+                if (paperState == 1) {
+                    px0 = sx(v, 13);
+                    py0 = sy(v, armRow(v) + 1, lift);
+                } else if (paperState == 2 || paperState == 3) {
+                    px0 = ox - S;
+                    py0 = oy - S;
+                } else {
+                    break;
+                }
+                px0 = Math.round(px0 / S) * S;
+                py0 = Math.round(py0 / S) * S;
+                rectT(c, px0, py0, px0 + 2 * S, py0 + 2 * S, Art.color('w'), 255);
+                rectT(c, px0 + S, py0 + S, px0 + 2 * S, py0 + 2 * S, Art.color('q'), 255);
+                break;
+            }
             case BUBBLEWRAP: {
                 int[] tint = WRAP_TINTS[wrapTint];
                 int w = wrapCols * 2 + 1, h = wrapRows * 2 + 1;

@@ -99,6 +99,10 @@ public final class SquibService extends Service {
         this.wm = (WindowManager) getSystemService(WindowManager.class);
         this.usage = (UsageStatsManager) getSystemService(UsageStatsManager.class);
         this.audio = (AudioManager) getSystemService(AudioManager.class);
+        // A fresh start: no headphones carried over from before he was stopped or paused.
+        Fun.listening = false;
+        Fun.listenOff = -1;
+        Fun.musicFor = 0;
         addWindows();
         Remote.start(this);
         registerScreenReceiver();
@@ -291,8 +295,12 @@ public final class SquibService extends Service {
                 }
             }
             this.lastUsageQuery = currentTimeMillis;
-            if (str == null || str.equals(getPackageName()) || str.equals("com.android.systemui")) {
+            if (str == null || str.equals("com.android.systemui")) {
                 return;
+            }
+            this.stage.ownAppOpen = str.equals(getPackageName());
+            if (this.stage.ownAppOpen) {
+                return; // his own settings: stays in the mode of the app you came from
             }
             this.stage.setApp(str);
         }

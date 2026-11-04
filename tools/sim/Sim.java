@@ -122,6 +122,8 @@ public class Sim {
         String mode = a.length > 0 ? a[0] : "sheets";
         if (mode.equals("sheets")) {
             sheets(a.length > 1 ? a[1] : null);
+        } else if (mode.equals("gallery")) {
+            gallery();
         } else if (mode.equals("picks")) {
             picks();
         } else {
@@ -161,7 +163,7 @@ public class Sim {
             if (act == Fun.FRIEND) {
                 dur = 16;
             }
-            capture(String.format("%02d_%s", act, name), v, dur, 15, 300, null);
+            capture(String.format("%02d_%s", act, name), v, dur, 15, act == Fun.TOSS ? 700 : 300, null);
         }
         if (only == null || only.contains("MC")) {
             for (int m = 1; m <= 5; m++) {
@@ -225,6 +227,57 @@ public class Sim {
             }
             sheet("HATS", small, labels);
         }
+    }
+
+    /** One frame from the middle of every activity and fidget, all on one sheet, for checking they look alike. */
+    static void gallery() throws Exception {
+        List<BufferedImage> frames = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        double at = Double.parseDouble(System.getProperty("at", "0.4"));
+        for (int act = 1; act < Fun.NAMES.length; act++) {
+            SquibView v = fresh();
+            if (Fun.WHERE[act] == Fun.PERCH) {
+                v.setApp("com.google.android.apps.maps");
+                run(v, 1);
+            }
+            if (act == Fun.STARGAZE) {
+                Fun.night = true;
+            }
+            v.speech = null;
+            Fun.start(v, act);
+            double dur = Math.max(1.5, Math.min(12, Fun.actEnd - v.t));
+            run(v, dur * at);
+            v.speech = null;
+            frames.add(shot(v, 220));
+            labels.add(Fun.NAMES[act]);
+        }
+        String[][] extra = {{"LISTEN", "com.spotify.music"}, {"CHAT", "com.whatsapp"}, {"WATCH", "com.netflix.mediaclient"}};
+        for (String[] e : extra) {
+            SquibView v = fresh();
+            v.setApp(e[1]);
+            if (e[0].equals("LISTEN")) {
+                v.musicOn = true;
+            }
+            if (e[0].equals("CHAT")) {
+                Fun.nextTextAt = 0;
+            }
+            run(v, 14);
+            v.speech = null;
+            frames.add(shot(v, 220));
+            labels.add(e[0]);
+        }
+        int cols = 8, size = 220;
+        int rows = (frames.size() + cols - 1) / cols;
+        BufferedImage out = new BufferedImage(cols * size, rows * (size + 16), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = out.createGraphics();
+        g.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        for (int i = 0; i < frames.size(); i++) {
+            int x = (i % cols) * size, y = (i / cols) * (size + 16);
+            g.drawImage(frames.get(i), x, y + 16, null);
+            g.setColor(Color.WHITE);
+            g.drawString(labels.get(i), x + 4, y + 12);
+        }
+        ImageIO.write(out, "png", new File(OUT, "GALLERY.png"));
     }
 
     /** Every activity and fidget, every version, picked from the floor and from a cloud, the way the picker in settings does it. */

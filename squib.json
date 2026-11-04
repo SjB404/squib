@@ -1511,6 +1511,25 @@
       "none left on this one.",
       "*checks for any he missed*",
       "done. there's more."
+    ],
+    "TOSS": [
+      "paper toss.",
+      "bin's over there.",
+      "*scrunches up some paper*",
+      "from here. easy.",
+      "one more."
+    ],
+    "TOSS_IN": [
+      "in.",
+      "that counts.",
+      "clean.",
+      "*nods*"
+    ],
+    "TOSS_MISS": [
+      "off the rim.",
+      "close.",
+      "the bin moved.",
+      "*looks at it*"
     ]
   },
   "apps": {

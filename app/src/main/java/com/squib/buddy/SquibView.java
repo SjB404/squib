@@ -95,6 +95,8 @@ final class SquibView extends View {
     boolean musicOn;
     /** The last music or video app opened was a video app: sound playing now is probably a video, not music. */
     boolean lastMediaVideo;
+    /** Squib's own settings screen is open (set by SquibService). */
+    boolean ownAppOpen;
     final List<Particle> particles;
     boolean perched;
     /** Set by Fun while a picked trick needs a different spot: 1 on a cloud, 2 on the floor, 0 normal. */
