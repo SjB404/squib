@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.14). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.15). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -115,9 +115,13 @@ From midnight to 5am (`bedtimeStart` / `bedtimeEnd`) he goes to sleep, in every 
 
 He wakes up now and then to tell you to go to bed (a WOKE_NAG line, or a LATE / LATE_NIGHT one): about every 20 to 30 minutes until 1am, then about every 11 to 19 minutes. He goes back to sleep about 15 seconds later.
 
-Every time he tells you it's late (the LATE, LATE_NIGHT and WOKE_NAG lines, including the screen-on one below) the phone gives two light ticks. On phones with a proper haptic motor that's the crisp "tick" effect, not a buzz; older phones get the closest short tap they can do.
+Every time he tells you it's late (the LATE, LATE_NIGHT and WOKE_NAG lines, including the screen-on one below and the nag button) the phone gives two light ticks. On phones with a proper haptic motor that's the crisp "tick" effect, not a buzz; older phones get the closest short tap they can do.
 
-Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line. A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for about a minute, then lies down again.
+Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line. A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for 15 to 25 seconds, then lies down again.
+
+Nothing else wakes him at night. Switching apps or unlocking the phone moves him to the new app's spot but he stays asleep, and says nothing about the app. While he's awake at bedtime he stays where he is (no walking around or hopping), just looks around.
+
+**Testing it:** the **nag** button in his settings makes him do the late nag right now, at any hour, with the phone tick. Outside bedtime it's a LATE line (LATE_NIGHT from 1am to 5am); at bedtime, if he's asleep, he wakes up for it like he does on his own.
 
 ### everything else (HOME)
 

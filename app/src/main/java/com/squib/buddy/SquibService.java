@@ -32,6 +32,7 @@ import android.view.WindowManager;
 public final class SquibService extends Service {
     static final String ACTION_FEED = "com.squib.buddy.FEED";
     static final String ACTION_HIDE = "com.squib.buddy.HIDE";
+    static final String ACTION_NAG = "com.squib.buddy.NAG";
     static final String ACTION_PAUSE = "com.squib.buddy.PAUSE";
     static final String ACTION_REFRESH = "com.squib.buddy.REFRESH";
     static final String ACTION_STOP = "com.squib.buddy.STOP";
@@ -129,6 +130,9 @@ public final class SquibService extends Service {
         } else if (ACTION_FEED.equals(action)) {
             this.stage.userHidden = false;
             this.stage.feed();
+        } else if (ACTION_NAG.equals(action)) {
+            this.stage.userHidden = false;
+            this.stage.lateNag(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY));
         } else if (ACTION_TALK.equals(action)) {
             this.stage.userHidden = false;
             this.stage.talk();

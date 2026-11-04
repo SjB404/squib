@@ -3087,7 +3087,7 @@ final class Fun {
                 float x = sx(v, handPx(v, right) + 0.5f);
                 float y = sy(v, handPy(v, right) + 1, lift);
                 float len = (float) (Math.abs(Math.sin(el * 2.2)) * Math.min(Math.max(0, v.floorY - y - 3 * S), 30 * v.d));
-                line(c, x, y, x, y + len, thin(v), 0xFF1D1D1D);
+                line(c, x, y, x, y + len, thin(v), STRING);
                 drawBmp(c, tint("YOYO", "uU", pair(yoyoColor))[0], x - 1.5f * S, y + len - 1.5f * S, S, 255);
                 break;
             }

@@ -357,6 +357,15 @@ final class SquibView extends View {
         }
         this.kind = kindOf;
         this.seated = false;
+        if (Fun.bedtime) {
+            // at night, switching apps (or unlocking the phone) moves him to the new spot but doesn't wake him,
+            // and he doesn't comment on the new app
+            if (this.motion == Motion.WANDER) {
+                setMotion(Motion.IDLE);
+            }
+            place();
+            return;
+        }
         if (this.motion == Motion.SLEEP || this.motion == Motion.WANDER) {
             setMotion(Motion.IDLE);
         }
@@ -551,6 +560,12 @@ final class SquibView extends View {
             return;
         }
         double nextDouble = this.rng.nextDouble();
+        if (Fun.bedtime) {
+            // up in the middle of the night: stays where he is, looks around now and then
+            this.lookAroundFor = nextDouble >= 0.3d ? 0.0d : 2.0d;
+            this.nextDecision = (this.rng.nextDouble() * 6.0d) + 4.0d;
+            return;
+        }
         if (this.seated) {
             this.lookAroundFor = nextDouble >= 0.2d ? 0.0d : 2.0d;
             this.nextDecision = (this.rng.nextDouble() * 8.0d) + 5.0d;
@@ -683,25 +698,33 @@ final class SquibView extends View {
             double d6 = this.t;
             if (d6 >= this.nextLateCheckAt) {
                 this.nextLateCheckAt = d6 + ((i3 == 23 ? 40.0d : i3 == 0 ? 25.0d : 15.0d) * 60.0d * ((this.rng.nextDouble() * 0.5d) + 0.75d));
-                String[] nag = (i3 >= 23 || i3 < 1) ? Lines.LATE : Lines.LATE_NIGHT;
-                if (Fun.bedtime && this.motion == Motion.SLEEP) {
-                    // wake up just long enough to nag, then back to sleep
-                    setMotion(Motion.IDLE);
-                    this.surpriseFor = 0.4d;
-                    kick(-1.5d);
-                    this.bedAt = this.t + 14.0d;
-                    if (this.rng.nextDouble() < 0.7d) {
-                        nag = Lines.WOKE_NAG;
-                    }
-                }
-                say(Pick.one(nag), 2.0d);
-                lateNagged();
+                lateNag(i3);
             }
         }
         if (this.chatty && this.hungerSecs > 14400.0d && this.t - this.lastHungry > 1800.0d && this.motion == Motion.IDLE && this.speech == null) {
             this.lastHungry = this.t;
             say(Pick.one(Lines.HUNGRY), 0.0d);
         }
+    }
+
+    /**
+     * Tells you it's late (LATE until 1am, LATE_NIGHT after), with the phone's tick. At bedtime, if he's asleep,
+     * he wakes just long enough to say it (usually a WOKE_NAG line) and lies back down about 14 seconds later.
+     * Also the "nag" button in his settings, which runs it right away at any hour to test it.
+     */
+    void lateNag(int hour) {
+        String[] nag = (hour >= 1 && hour < 5) ? Lines.LATE_NIGHT : Lines.LATE;
+        if (Fun.bedtime && this.motion == Motion.SLEEP) {
+            setMotion(Motion.IDLE);
+            this.surpriseFor = 0.4d;
+            kick(-1.5d);
+            this.bedAt = this.t + 14.0d;
+            if (this.rng.nextDouble() < 0.7d) {
+                nag = Lines.WOKE_NAG;
+            }
+        }
+        say(Pick.one(nag), 2.0d);
+        lateNagged();
     }
 
     void lateNagged() {
@@ -732,7 +755,7 @@ final class SquibView extends View {
             return;
         }
         if (this.bedAt < 0.0d) {
-            this.bedAt = this.t + (this.sleptTonight ? (this.rng.nextDouble() * 30.0d) + 45.0d : (this.rng.nextDouble() * 10.0d) + 5.0d);
+            this.bedAt = this.t + (this.sleptTonight ? (this.rng.nextDouble() * 10.0d) + 15.0d : (this.rng.nextDouble() * 10.0d) + 5.0d);
             return;
         }
         if (this.t >= this.bedAt && (this.motion == Motion.IDLE || this.motion == Motion.WANDER) && (this.speech == null || this.sleptTonight)) {
@@ -1545,7 +1568,9 @@ final class SquibView extends View {
                         i3 = -14016192;
                         break;
                     case '+':
+                        break;
                     case 'n':
+                        i3 = 0xFFE6DEFF; // music notes: light, so they show on dark apps too
                         break;
                     case 'a':
                         i3 = -2594219;
@@ -1584,7 +1609,7 @@ final class SquibView extends View {
                         i3 = -8054;
                         break;
                     case 'z':
-                        i3 = -7636043;
+                        i3 = 0xFFD9E4FF; // Zs: light, so they show on dark apps too
                         break;
                     default:
                         i3 = 0;

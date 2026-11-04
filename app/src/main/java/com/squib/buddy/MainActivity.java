@@ -135,6 +135,7 @@ public final class MainActivity extends Activity {
                 pick(true);
             }
         }), weight());
+        picks.addView(sendButton("nag", SquibService.ACTION_NAG), weight());
         root.addView(picks);
 
         heading(root, "settings");
@@ -181,7 +182,7 @@ public final class MainActivity extends Activity {
         Remote.addRow(this, root);
 
         heading(root, "how to play");
-        root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. \"pick a trick\" / \"pick a fidget\" let you choose which one, and which version. his notification has hide, feed and pause. when he's paused, it has start and stop.", 14, CREAM, false));
+        root.addView(label("tap him to boop. double-tap for ink. drag him around and let go to throw him. hold your finger on him to pet him. \"trick\" makes him do something right now. \"pick a trick\" / \"pick a fidget\" let you choose which one, and which version. \"nag\" makes him tell you it's late right now (with the phone tick), to test it. his notification has hide, feed and pause. when he's paused, it has start and stop.", 14, CREAM, false));
         heading(root, "app modes");
         root.addView(label(Apps.SUMMARY, 13, CREAM, false));
 
