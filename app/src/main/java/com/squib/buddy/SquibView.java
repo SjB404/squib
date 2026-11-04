@@ -91,6 +91,8 @@ final class SquibView extends View {
     /** Run when he tells you it's late (set by SquibService to tick the phone's vibration). Null in the sim. */
     Runnable onLateNag;
     double noteIn;
+    /** Something is playing audio as music (set about once a second by SquibService). See Fun.listen. */
+    boolean musicOn;
     final List<Particle> particles;
     boolean perched;
     /** Set by Fun while a picked trick needs a different spot: 1 on a cloud, 2 on the floor, 0 normal. */
@@ -572,10 +574,10 @@ final class SquibView extends View {
         if (this.seated) {
             this.lookAroundFor = nextDouble >= 0.2d ? 0.0d : 2.0d;
             this.nextDecision = (this.rng.nextDouble() * 8.0d) + 5.0d;
-        } else if (nextDouble < 0.68d) {
+        } else if (nextDouble < (Fun.listening ? 0.35d : 0.68d)) { // with headphones on he mostly stays put and listens
             this.targetX = clamp(this.posX + (((this.rng.nextDouble() * 2.0d) - 1.0d) * 120.0d * this.d), this.minX, this.maxX);
             setMotion(Motion.WANDER);
-        } else if (nextDouble < 0.78d) {
+        } else if (nextDouble < (Fun.listening ? 0.45d : 0.78d)) {
             hop();
             this.nextDecision = (this.rng.nextDouble() * 4.0d) + 3.0d;
         } else {
@@ -602,6 +604,11 @@ final class SquibView extends View {
     }
 
     void chatter() {
+        String[] listen = Lines.get("LISTEN");
+        if (Fun.listening && listen != null && listen.length > 0 && this.rng.nextDouble() < (kindNow() == Apps.Kind.MUSIC ? 0.5d : 0.4d)) {
+            say(Pick.one(listen), 0.0d);
+            return;
+        }
         switch (kindNow()) {
             case WATCH:
                 say(Pick.one(Lines.WATCH), 0.0d);
@@ -874,17 +881,20 @@ final class SquibView extends View {
         if (this.motion == Motion.FALL || this.motion == Motion.DRAG || this.motion == Motion.JET) {
             i = 0;
         }
-        if (kindNow() == Apps.Kind.MUSIC && this.motion == Motion.IDLE) {
+        boolean musicApp = kindNow() == Apps.Kind.MUSIC;
+        if ((musicApp || Fun.listening) && this.motion == Motion.IDLE) {
             double d5 = this.beatIn - d;
             this.beatIn = d5;
             if (d5 <= 0.0d) {
-                this.beatIn = 0.5d;
-                kick(1.2d);
+                // with headphones on he nods along at the song's own speed
+                this.beatIn = Fun.listening ? Fun.beatGap : 0.5d;
+                kick(Fun.listening && !musicApp ? 0.9d : 1.2d);
             }
             double d6 = this.noteIn - d;
             this.noteIn = d6;
             if (d6 <= 0.0d) {
-                this.noteIn = (this.rng.nextDouble() * 1.5d) + 1.2d;
+                // fewer notes outside music apps, while it plays in the background
+                this.noteIn = musicApp ? (this.rng.nextDouble() * 1.5d) + 1.2d : (this.rng.nextDouble() * 4.0d) + 3.0d;
                 note();
             }
         }

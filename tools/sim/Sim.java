@@ -43,6 +43,8 @@ public class Sim {
         Fun.partyDay = false;
         Fun.night = false;
         Fun.december = false;
+        Fun.listening = false;
+        Fun.listenOff = -1;
         java.util.Arrays.fill(Fun.recentActs, 0);
         SquibView v = new SquibView(ctx);
         v.onScreen(W, H, 80, 130);
@@ -171,6 +173,19 @@ public class Sim {
                 Fun.startMc(v, v.t, m);
                 capture("MC_" + m, v, Math.max(1.5, Fun.mcEnd - v.t + 0.5), 10, 300, null);
             }
+        }
+        if (only == null || only.contains("LISTEN")) {
+            SquibView v = fresh();
+            v.setApp("com.spotify.music");
+            run(v, 2);
+            v.musicOn = true;
+            capture("LISTEN", v, 3, 10, 260, null); // headphones going on
+            Fun.nextVibe = v.t;
+            capture("LISTEN_along", v, 24, 15, 260, null);
+            v.setApp("com.android.launcher");
+            capture("LISTEN_home", v, 10, 10, 260, null);
+            v.musicOn = false;
+            capture("LISTEN_off", v, 8, 10, 260, null);
         }
         if (only == null || only.contains("HATS")) {
             List<BufferedImage> frames = new ArrayList<>();
@@ -305,6 +320,9 @@ public class Sim {
                 double e = r.nextDouble();
                 float x = v.posX + v.S * 14, y = v.posY - v.S * 8;
                 long now = SystemClock.now;
+                if (r.nextDouble() < 0.3) {
+                    v.musicOn = !v.musicOn; // music starts or stops
+                }
                 if (e < 0.35) {
                     v.setApp(apps[r.nextInt(apps.length)]);
                 } else if (e < 0.5) {

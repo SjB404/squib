@@ -11,7 +11,7 @@ import java.util.Map;
 final class Apps {
     private static final Map<String, Kind> KNOWN = new HashMap<String, Kind>();
     static final String SUMMARY = "watch: netflix, youtube, disney+, prime video, max, hulu, twitch, crunchyroll, plex, vlc and other video apps. sits in the corner with popcorn.\n\n"
-            + "music: spotify, youtube music, apple music, soundcloud, deezer, tidal, podcasts. bops along, dances and plays guitar more.\n\n"
+            + "music: spotify, youtube music, apple music, soundcloud, deezer, tidal, podcasts. bops along, dances and plays guitar more. when music is actually playing he puts headphones on and listens along, and keeps them on if you leave the app while it plays (not for video).\n\n"
             + "scrolling: tiktok, instagram, snapchat, reddit, x, facebook, pinterest, threads. hangs out, and checks in every 15 minutes.\n\n"
             + "chat: whatsapp, discord, telegram, messenger, signal, messages, slack, teams, gmail. perches up top and looks away.\n\n"
             + "games: minecraft, roblox, clash royale, brawl stars, genshin, pubg, cod, among us, pokemon go and any other game. perches in the top corner and cheers. in minecraft he gets diamond gear.\n\n"

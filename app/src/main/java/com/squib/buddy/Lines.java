@@ -508,7 +508,7 @@ final class Lines {
             "this is turning into a marathon."};
     static String[] MUSIC_ENTER = {
             "oh. music.",
-            "*puts on tiny headphones*",
+            "*listens for a bit*",
             "let's hear it.",
             "music time.",
             "ok. i'll listen.",
@@ -531,6 +531,32 @@ final class Lines {
             "*closes eyes, listens*",
             "this one again. fine by me.",
             "*head bob*"};
+    static String[] LISTEN_ON = {
+            "headphones on.",
+            "ok. listening.",
+            "*puts headphones on*",
+            "i'll listen too.",
+            "oh, this one.",
+            "turning mine up."};
+    static String[] LISTEN = {
+            "*nods along*",
+            "this part's good.",
+            "the bass in this one is good.",
+            "can't make out the words. still good.",
+            "still listening.",
+            "this one's been on a while.",
+            "the drums are doing a lot here.",
+            "*taps along*",
+            "i know this one. sort of.",
+            "new song. i noticed.",
+            "*eyes shut, listening*",
+            "good one to walk to."};
+    static String[] LISTEN_OFF = {
+            "music's off.",
+            "quiet again.",
+            "headphones off.",
+            "that's it, then.",
+            "paused?"};
     static String[] SCROLL = {
             "*watches you scroll*",
             "scroll scroll.",
@@ -1334,6 +1360,19 @@ final class Lines {
             "*bridges the deck*",
             "fifty-two. probably.",
             "good deck."};
+    static String[] BUBBLEWRAP = {
+            "bubble wrap.",
+            "found this in a box.",
+            "every one of these gets popped.",
+            "*pop*",
+            "these are the good kind.",
+            "one at a time."};
+    static String[] BUBBLEWRAP_DONE = {
+            "that's the sheet.",
+            "all popped.",
+            "none left on this one.",
+            "*checks for any he missed*",
+            "done. there's more."};
 
     /** A line group by name, or null if there's no such group. */
     static String[] get(String name) {

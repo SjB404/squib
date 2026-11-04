@@ -16,6 +16,7 @@ import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.graphics.drawable.Icon;
 import android.hardware.input.InputManager;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -49,6 +50,7 @@ public final class SquibService extends Service {
     SquibView stage;
     WindowManager.LayoutParams stageLp;
     UsageStatsManager usage;
+    AudioManager audio;
     int usageTick;
     WindowManager wm;
     final Handler handler = new Handler(Looper.getMainLooper());
@@ -70,6 +72,7 @@ public final class SquibService extends Service {
             if (i >= 30) {
                 SquibService.this.usageTick = 0;
                 SquibService.this.pollForegroundApp();
+                SquibService.this.pollMusic();
             }
             SquibService.this.handler.postDelayed(this, 33L);
         }
@@ -95,10 +98,12 @@ public final class SquibService extends Service {
         }
         this.wm = (WindowManager) getSystemService(WindowManager.class);
         this.usage = (UsageStatsManager) getSystemService(UsageStatsManager.class);
+        this.audio = (AudioManager) getSystemService(AudioManager.class);
         addWindows();
         Remote.start(this);
         registerScreenReceiver();
         pollForegroundApp();
+        pollMusic();
         // Started with the screen off (by the pause alarm or at boot): wait for the screen to come on.
         if (!((PowerManager) getSystemService(PowerManager.class)).isInteractive()) {
             this.screenOn = false;
@@ -290,6 +295,20 @@ public final class SquibService extends Service {
                 return;
             }
             this.stage.setApp(str);
+        }
+    }
+
+    /**
+     * Whether anything is playing as music. Android says so to any app without a permission, but not which app
+     * it is, so squib only puts headphones on while a music app is open (see Fun.listen).
+     */
+    void pollMusic() {
+        if (this.audio != null && this.stage != null) {
+            try {
+                this.stage.musicOn = this.audio.isMusicActive();
+            } catch (RuntimeException e) {
+                this.stage.musicOn = false;
+            }
         }
     }
 

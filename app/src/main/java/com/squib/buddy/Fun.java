@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 5};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -158,6 +158,23 @@ final class Fun {
     static double cardRound;
     static final int CARD_N = 12;
     static final double RIFFLE_GAP = 0.08, RIFFLE_FLY = 0.2, SPRING_GAP = 0.07, SPRING_FLY = 0.45;
+
+    /** Bubble wrap: bubbles across and down, tint, mode (0 one at a time, 1 row by row, 2 twists it), which are popped. */
+    static final String[] WRAP_MODES = {"one at a time", "row by row", "twists it"};
+    /** Each tint: sheet, bubble, popped bubble (ARGB, a bit see-through). */
+    static final int[][] WRAP_TINTS = {{0x80DDEBF2, 0xF0F7FCFF, 0xA0A9BBC6}, {0x8090C8F0, 0xF0D6EEFF, 0xA06C9EC4},
+            {0x80F4B8D2, 0xF0FFE3EF, 0xA0C98AA6}, {0x80A8DDB0, 0xF0E2FBE6, 0xA079AE83}, {0x80F2E2A0, 0xF0FFF7D6, 0xA0C4B26A}};
+    static final String[] WRAP_POP = {"w.w", ".w.", "w.w"};
+    static int wrapCols, wrapRows, wrapTint, wrapMode, wrapLeft, wrapHits;
+    static final boolean[] wrapPopped = new boolean[40];
+    static boolean wrapHand;
+    static double wrapPressAt = -1, wrapTwist = -1;
+
+    // ---------- headphones: on while music is actually playing in a music app ----------
+    /** On while music plays. listenOn / listenOff: when they went on or came off (-1: never), for the animation. */
+    static boolean listening, hpSide;
+    static int vibe; // vibe 0 nods along, 1 eyes shut, 2 a hand on the headphones
+    static double listenOn = -1, listenOff = -1, quietFor, nextVibe, vibeEnd, beatGap = 0.5;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
     static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
@@ -463,6 +480,7 @@ final class Fun {
             case DICE: return "dice";
             case PEN: return "clicky pen";
             case CARDS: return "card shuffle";
+            case BUBBLEWRAP: return "bubble wrap";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -490,6 +508,7 @@ final class Fun {
             case DICE: return Props.DIE_NAMES;
             case PEN: return Props.PAIR_NAMES;
             case CARDS: return new String[]{"riffle", "card spring", "drops them"};
+            case BUBBLEWRAP: return WRAP_MODES;
             default: return null;
         }
     }
@@ -554,6 +573,7 @@ final class Fun {
         }
         season(v, t, dt);
         scroll(v);
+        listen(v, t, dt);
         Apps.Kind kind = v.kindNow();
         SquibView.Motion motion = v.motion;
         boolean busy = v.dragging || v.petting || v.touching || v.shrimpOn || motion == SquibView.Motion.DRAG
@@ -1068,6 +1088,12 @@ final class Fun {
                 cardRound = t + rand(0.4, 0.9);
                 actEnd = t + span(5, 240); // a couple of shuffles, or minutes of it
                 break;
+            case BUBBLEWRAP:
+                wrapMode = chooseW(5, 3, 2);
+                newWrap();
+                nextEvent = t + rand(0.5, 1.2); // looks it over first
+                actEnd = t + span(6, 240); // one sheet, or a few minutes of sheets
+                break;
             case STRESSBALL:
                 ballLook = Props.ballLook(rng, 5, 6, want >= 0 ? want % Props.PATTERNS.length : -1);
                 spinHand = right(v);
@@ -1120,6 +1146,54 @@ final class Fun {
                 actEnd = t + rand(1.8, 2.9);
                 break;
         }
+    }
+
+    /** A new sheet of bubble wrap: 5 to 9 bubbles across, 2 or 3 down, in a random tint. */
+    static void newWrap() {
+        wrapCols = 5 + rng.nextInt(5);
+        wrapRows = 2 + rng.nextInt(2);
+        wrapTint = rng.nextInt(WRAP_TINTS.length);
+        wrapLeft = wrapCols * wrapRows;
+        wrapHits = 0;
+        wrapTwist = -1;
+        wrapPressAt = -1;
+        Arrays.fill(wrapPopped, false);
+    }
+
+    static int randomBubble() {
+        int n = rng.nextInt(wrapLeft);
+        for (int i = 0; i < wrapCols * wrapRows; i++) {
+            if (!wrapPopped[i] && n-- == 0) {
+                return i;
+            }
+        }
+        return firstBubble();
+    }
+
+    static int firstBubble() {
+        for (int i = 0; i < wrapCols * wrapRows; i++) {
+            if (!wrapPopped[i]) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    static void popWrap(SquibView v, int i) {
+        if (wrapPopped[i]) {
+            return;
+        }
+        wrapPopped[i] = true;
+        wrapLeft--;
+        wrapHits++;
+        int col = i % wrapCols, row = i / wrapCols;
+        wrapHand = col * 2 >= wrapCols;
+        wrapPressAt = v.t;
+        v.kick(wrapTwist >= 0 ? 0.15 : 0.35);
+        float gx = (28 - (wrapCols * 2 + 1)) / 2 + 1 + col * 2 + 0.5f, gy = armRow(v) + 1 + 1 + row * 2 + 0.5f;
+        float d = v.d;
+        v.spawn(bmp("WRAP_POP", WRAP_POP)[0], sx(v, gx), sy(v, gy, v.lift()), (rng.nextFloat() - 0.5f) * 30 * d,
+                (-20 - rng.nextFloat() * 25) * d, 0.3f, 0, 0, 1, v.T, true);
     }
 
     static void end(SquibView v) {
@@ -2523,6 +2597,55 @@ final class Fun {
                 }
                 break;
             }
+            case BUBBLEWRAP: {
+                v.lookX = 0;
+                v.lookY = 1;
+                boolean twisting = wrapTwist >= 0;
+                if (twisting) { // wrings it out: hands going opposite ways, bubbles going off fast
+                    int k = ((int) ((t - wrapTwist) * 10)) % 2;
+                    arm(v, false, 1 + k);
+                    arm(v, true, 2 - k);
+                } else {
+                    arm(v, false, 1);
+                    arm(v, true, 1);
+                    if (wrapPressAt >= 0 && t - wrapPressAt < 0.16) {
+                        arm(v, wrapHand, 2); // the hand that just pressed one
+                    }
+                }
+                if (t < nextEvent) {
+                    break;
+                }
+                if (wrapLeft == 0) {
+                    wrapTwist = -1;
+                    if (t > actEnd) {
+                        maybeSay(v, "BUBBLEWRAP_DONE", 0.25);
+                        end(v);
+                        break;
+                    }
+                    newWrap(); // gets another sheet out
+                    v.kick(0.6);
+                    nextEvent = t + rand(0.8, 1.8);
+                    break;
+                }
+                if (twisting) {
+                    popWrap(v, randomBubble());
+                    nextEvent = t + rand(0.03, 0.09);
+                    break;
+                }
+                if (wrapMode == 2 && wrapHits >= 3) { // had enough of one at a time
+                    wrapTwist = t;
+                    v.kick(-1);
+                    nextEvent = t + 0.25;
+                    break;
+                }
+                popWrap(v, wrapMode == 1 ? firstBubble() : randomBubble());
+                if (wrapMode == 1) {
+                    nextEvent = t + rand(0.15, 0.32);
+                } else {
+                    nextEvent = t + (rng.nextDouble() < 0.1 ? span(1, 8) : rand(0.25, 0.9)); // sometimes stops to look
+                }
+                break;
+            }
             case CARDS: {
                 double rt = t - cardRound;
                 if (cardMode == 0) { // riffle: a half in each hand, falling together in the middle
@@ -3109,6 +3232,105 @@ final class Fun {
 
     // ================= seasons =================
 
+    // ================= headphones =================
+
+    /**
+     * Headphones go on when music is actually playing (SquibView.musicOn) while a music app is open. They stay
+     * on if you leave the app and it keeps playing, until it stops for a few seconds or an app with its own
+     * sound comes up (video, games, scrolling feeds, calls and the camera).
+     */
+    static void listen(SquibView v, double t, double dt) {
+        Apps.Kind kind = v.kindNow();
+        if (!listening) {
+            if (v.musicOn && kind == Apps.Kind.MUSIC && v.visible() && !inMc) {
+                listening = true;
+                beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
+                listenOn = t;
+                listenOff = -1;
+                quietFor = 0;
+                vibe = 0;
+                nextVibe = t + rand(4, 10);
+                if (!bedtime) {
+                    maybeSay(v, "LISTEN_ON", 0.4);
+                }
+            }
+            return;
+        }
+        boolean otherSound = kind == Apps.Kind.WATCH || kind == Apps.Kind.GAME || kind == Apps.Kind.SCROLL
+                || kind == Apps.Kind.HIDE;
+        quietFor = v.musicOn ? 0 : quietFor + dt;
+        if (otherSound || quietFor > 6) { // a few seconds' grace for the gap between songs
+            listening = false;
+            listenOff = t;
+            vibe = 0;
+            if (!otherSound && !bedtime) {
+                maybeSay(v, "LISTEN_OFF", 0.3);
+            }
+            return;
+        }
+        if (t >= nextVibe) {
+            vibe = chooseRandom(4, 3, 2);
+            vibeEnd = t + span(3, 25);
+            nextVibe = vibeEnd + rand(4, 15);
+            hpSide = rng.nextBoolean();
+        }
+        if (t > vibeEnd) {
+            vibe = 0;
+        }
+        boolean free = act == NONE && v.motion == SquibView.Motion.IDLE && !v.talking && !v.petting && !v.seated
+                && v.face != SquibView.Face.SURPRISED && v.face != SquibView.Face.ANNOYED;
+        if (!free) {
+            return;
+        }
+        if (t - listenOn < 0.7) { // putting them on
+            arm(v, false, 2);
+            arm(v, true, 2);
+            return;
+        }
+        if (vibe == 1 && (v.face == SquibView.Face.OPEN || v.face == SquibView.Face.BLINK)) {
+            v.face = SquibView.Face.HAPPY; // eyes shut, listening
+        } else if (vibe == 2) {
+            arm(v, hpSide, 2); // holds one side of the headphones
+            v.lookY = 0;
+        }
+    }
+
+    /** His headphones (white, so they show on dark apps too), coming down on and going up off. */
+    static void drawHeadphones(SquibView v, Canvas c, float lift) {
+        double t = v.t;
+        int dy = 0, a = 255;
+        if (listening) {
+            double p = (t - listenOn) / 0.7;
+            if (p < 1) {
+                dy = -(int) Math.round((1 - p) * 5);
+                a = (int) (120 + 135 * p);
+            }
+        } else if (listenOff >= 0 && t - listenOff < 0.6) {
+            double p = (t - listenOff) / 0.6;
+            dy = -(int) Math.round(p * 5);
+            a = (int) (255 * (1 - p));
+        } else {
+            return;
+        }
+        int L = 6 - v.squashLevel, R = 21 + v.squashLevel, top = top(v) + dy;
+        int light = Art.color('w'), dark = Art.color('q'), band = Art.color('q'); // all light: his phone is in dark mode
+        for (int x = L + 1; x <= R - 1; x++) { // band
+            dot(v, c, x, top - 2, band, a, lift);
+        }
+        dot(v, c, L, top - 1, band, a, lift);
+        dot(v, c, R, top - 1, band, a, lift);
+        dot(v, c, L - 1, top - 1, band, a, lift);
+        dot(v, c, R + 1, top - 1, band, a, lift);
+        for (int y = top; y <= top + 3; y++) { // cups
+            dot(v, c, L - 2, y, dark, a, lift);
+            dot(v, c, L - 1, y, light, a, lift);
+            dot(v, c, L, y, light, a, lift);
+            dot(v, c, R, y, light, a, lift);
+            dot(v, c, R + 1, y, light, a, lift);
+            dot(v, c, R + 2, y, dark, a, lift);
+        }
+    }
+
     static void season(SquibView v, double t, double dt) {
         if (t >= nextSeasonCheck) {
             nextSeasonCheck = t + 20;
@@ -3176,6 +3398,7 @@ final class Fun {
                 put(v, c, hat, right ? 0 : 1, 6, top(v) - 6, lift, 255);
             }
         }
+        drawHeadphones(v, c, lift);
         switch (act) {
             case BALL:
                 drawBmp(c, ball(ballLook, Math.round(roll / (float) (Math.PI / 4)))[0], bx - ballLook[0] / 2f * S,
@@ -3662,6 +3885,23 @@ final class Fun {
                 if (penTwirl < 0) { // the clip, on the side away from him
                     float cxp = hx + (spinHand ? 1 : -1);
                     dot(v, c, Math.round(cxp - 0.5f), Math.round(hy - 2.5f - 0.5f), Art.color((char) penClip), 255, lift);
+                }
+                break;
+            }
+            case BUBBLEWRAP: {
+                int[] tint = WRAP_TINTS[wrapTint];
+                int w = wrapCols * 2 + 1, h = wrapRows * 2 + 1;
+                int x0 = (28 - w) / 2, y0 = armRow(v) + 1;
+                if (wrapTwist >= 0) {
+                    x0 += ((int) ((v.t - wrapTwist) * 10)) % 2; // shakes while he wrings it
+                }
+                for (int y = 0; y < h; y++) {
+                    for (int x = 0; x < w; x++) {
+                        int col = (x - 1) / 2, row = (y - 1) / 2;
+                        boolean bubble = x % 2 == 1 && y % 2 == 1;
+                        int color = !bubble ? tint[0] : wrapPopped[row * wrapCols + col] ? tint[2] : tint[1];
+                        dot(v, c, x0 + x, y0 + y, color, 255, lift);
+                    }
                 }
                 break;
             }
