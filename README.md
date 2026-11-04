@@ -2,7 +2,7 @@
 
 Squib, the pixel squid that lives on your phone, and everything he says.
 
-- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.16.0). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
+- **Get the app:** [apk/Squib.apk](apk/Squib.apk) (version 1.17.0). The version is shown under his name at the top of his settings, and in the line at the bottom.. It installs over earlier versions.
 - **His lines:** `squib.json`. The app downloads it from here, so edits show up without a new app.
 - **The app's code:** `app/`, a normal Android project.
 
@@ -148,7 +148,7 @@ Walks along the bottom. When standing still he bops to a beat and music notes fl
 
 - Says a MUSIC line every 4 to 8 minutes.
 
-**Headphones (1.16.0):** when music is actually playing while a music app is open, he puts on a pair of white headphones and listens along: nods at the song's own speed, sometimes shuts his eyes, sometimes holds one side of the headphones, walks around less, and now and then says a LISTEN line. If you leave the app and the music keeps playing, he keeps them on (home screen, chat, maps, reading) with fewer notes. They come off when nothing has played for about 6 seconds, or when an app with its own sound comes up (video apps like YouTube, games, scrolling apps, calls, camera). Android tells any app whether something is playing, without a permission, but not which app it comes from, so the headphones only go on from inside a music app. Lines: LISTEN_ON (putting them on), LISTEN, LISTEN_OFF (music stopped).
+**Headphones (1.16.0):** when music is actually playing while a music app is open, he puts on a pair of white headphones and listens along: nods at the song's own speed, sometimes shuts his eyes, sometimes holds one side of the headphones, walks around less, and now and then says a LISTEN line. If you leave the app and the music keeps playing, he keeps them on in every other app (1.17.0), with fewer notes, and keeps doing his fidgets and activities with them on, nodding along. They come off when nothing has played for about 6 seconds, or when a video app (like YouTube), a call or the camera comes up. Android tells any app whether something is playing, without a permission, but not which app it comes from. So they go on in a music app, or in the home screen, chat, maps and reading apps if the last music or video app you opened was a music app. Games and scrolling apps make their own sound, so they can't put them on (they don't take them off either). Lines: LISTEN_ON (putting them on), LISTEN, LISTEN_OFF (music stopped).
 
 **Apps:** Spotify `com.spotify.music`, YouTube Music `com.google.android.apps.youtube.music`, Apple Music `com.apple.android.music`, SoundCloud `com.soundcloud.android`, Deezer `deezer.android.app`, Tidal `com.aspiro.tidal`, Amazon Music `com.amazon.mp3`, Pandora `com.pandora.android`, Shazam `com.shazam.android`, Audible `com.audible.application`, Podcast Addict `com.bambuna.podcastaddict`, Pocket Casts `au.com.shiftyjelly.pocketcasts`
 
@@ -167,11 +167,11 @@ Gets his own little phone out and scrolls along with you: a tiny endless feed on
 
 ### chat (CHAT)
 
-Sits on a cloud in the top-right corner, out of the way.
+Sits on a cloud near the top right (a bit lower than in other apps, so there's room over his head) and texts on his own phone (1.17.0): thumbs tapping, keys lighting up, a little chat on his screen. Message bubbles go back and forth over his head like a text chat in a film: his on the right in one colour per session, theirs on the left in white, newest at the bottom pushing the older ones up until they fade. Sometimes a photo or a heart instead of words, a "..." bubble while they type, double texts from either side, long waits for a reply, and a reaction to what they sent (happy, surprised, now and then annoyed). Sessions last from 20 seconds to several minutes, with breaks for fidgets in between, and don't count as activities.
 
 - Never chatters on his own here.
 
-**Apps:** WhatsApp `com.whatsapp`, WhatsApp Business `com.whatsapp.w4b`, Discord `com.discord`, Telegram `org.telegram.messenger`, Messenger `com.facebook.orca`, Signal `org.thoughtcrime.securesms`, Google Messages `com.google.android.apps.messaging`, Samsung Messages `com.samsung.android.messaging`, Slack `com.Slack`, Teams `com.microsoft.teams`, Viber `com.viber.voip`, LINE `jp.naver.line.android`, KakaoTalk `com.kakao.talk`, Gmail `com.google.android.gm`, Outlook `com.microsoft.office.outlook`
+**Apps:** WhatsApp `com.whatsapp`, WhatsApp Business `com.whatsapp.w4b`, Discord `com.discord`, Telegram `org.telegram.messenger`, Messenger `com.facebook.orca`, Signal `org.thoughtcrime.securesms`, Google Messages `com.google.android.apps.messaging`, Samsung Messages `com.samsung.android.messaging`, Slack `com.Slack`, Teams `com.microsoft.teams`, Viber `com.viber.voip`, LINE `jp.naver.line.android`, KakaoTalk `com.kakao.talk`, Gmail `com.google.android.gm`, Outlook `com.microsoft.office.outlook`, Beeper `com.beeper.android`, `com.beeper.chat`
 
 ### games (GAME)
 
@@ -272,7 +272,7 @@ He doesn't do activities while watching videos (he has popcorn), in hidden apps,
 
 ### Fidgets
 
-Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS or BUBBLEWRAP. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS and BUBBLEWRAP can go on for minutes.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP or TEXT. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP and TEXT can go on for minutes.
 
 - **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
 - **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
@@ -281,6 +281,7 @@ Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` 
 - **PEN:** clicks a pen in any of the 11 colours (grey or matching clip), in quick bursts with pauses. The button sinks in when the tip comes out. Now and then he twirls it twice round his fingers, sometimes passing it to the other hand. A few seconds to a few minutes.
 - **CARDS:** shuffles a small deck (card backs in a random bright colour). Riffle: half the deck in each hand, the cards drop in turn onto a pile in front of him, then he splits it and goes again. Card spring: the cards arc from one hand to the other over his head, then back. Now and then the spring goes wrong and the cards spray onto the floor, and he looks annoyed. A few seconds to a few minutes.
 - **BUBBLEWRAP:** pops a sheet of bubble wrap held against his front: 5 to 9 bubbles across, 2 or 3 down, clear or tinted blue, pink, green or yellow. One at a time in random order (with the odd pause), row by row, or a few one at a time and then he wrings the sheet and the rest go off at once. When a sheet is done he gets another out, from one sheet up to a few minutes. Lines: BUBBLEWRAP, BUBBLEWRAP_DONE.
+- **TEXT:** the same texting as in chat apps, anywhere, from a few seconds to a couple of minutes. He doesn't say anything when it starts: the message bubbles are his talking.
 
 ## Minecraft
 

@@ -93,6 +93,8 @@ final class SquibView extends View {
     double noteIn;
     /** Something is playing audio as music (set about once a second by SquibService). See Fun.listen. */
     boolean musicOn;
+    /** The last music or video app opened was a music app: music playing now is probably from it. */
+    boolean lastMediaMusic;
     final List<Particle> particles;
     boolean perched;
     /** Set by Fun while a picked trick needs a different spot: 1 on a cloud, 2 on the floor, 0 normal. */
@@ -320,7 +322,10 @@ final class SquibView extends View {
             case WATCH:
                 setFloor(floor, f8 - (this.d * 12.0f), f8);
                 break;
-            case CHAT:
+            case CHAT: // lower than the other clouds, so the message bubbles have room over his head
+                this.perched = true;
+                setFloor(f6 + (this.S * 16.0f), f8 - (this.d * 24.0f), f8);
+                break;
             case NAV:
             case READ:
                 this.perched = true;
@@ -357,6 +362,11 @@ final class SquibView extends View {
         }
         this.pkg = str;
         Apps.Kind kindOf = Apps.kindOf(getContext(), str);
+        if (kindOf == Apps.Kind.MUSIC) {
+            this.lastMediaMusic = true;
+        } else if (kindOf == Apps.Kind.WATCH) {
+            this.lastMediaMusic = false;
+        }
         if (kindOf == this.kind) {
             return;
         }

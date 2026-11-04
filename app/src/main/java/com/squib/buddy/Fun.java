@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 5};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 5, 3};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -169,6 +169,16 @@ final class Fun {
     static final boolean[] wrapPopped = new boolean[40];
     static boolean wrapHand;
     static double wrapPressAt = -1, wrapTwist = -1;
+
+    // ---------- texting: thumbs on his phone, message bubbles going back and forth over his head ----------
+    /** Each message: {born, side (1 his, -1 theirs), width (T pixels), kind (0 text, 1 picture, 2 heart, 3 typing dots), seed, stack offset (T pixels, eased), gone at (-1: still up)}. */
+    static final ArrayList<double[]> texts = new ArrayList<double[]>();
+    /** Bubble colours for his messages: yellow, blue, green, purple, pink, teal. */
+    static final int[] TEXT_COLORS = {1, 2, 3, 4, 5, 8};
+    static final int[] HEART_ROWS = {0x36, 0x7F, 0x7F, 0x3E, 0x1C, 0x08}; // 7 wide, one bit per pixel
+    static boolean autoText;
+    static double nextTextAt, typeFrom;
+    static int textColor, textPhase, burst; // textPhase 0 he types, 1 waits for a reply, 2 they're typing
 
     // ---------- headphones: on while music is actually playing in a music app ----------
     /** On while music plays. listenOn / listenOff: when they went on or came off (-1: never), for the animation. */
@@ -481,6 +491,7 @@ final class Fun {
             case PEN: return "clicky pen";
             case CARDS: return "card shuffle";
             case BUBBLEWRAP: return "bubble wrap";
+            case TEXT: return "texting";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -574,6 +585,7 @@ final class Fun {
         season(v, t, dt);
         scroll(v);
         listen(v, t, dt);
+        textTick(v, t, dt);
         Apps.Kind kind = v.kindNow();
         SquibView.Motion motion = v.motion;
         boolean busy = v.dragging || v.petting || v.touching || v.shrimpOn || motion == SquibView.Motion.DRAG
@@ -616,6 +628,10 @@ final class Fun {
             // scrolling apps: he gets his own phone out and scrolls along with you
             autoPhone = true;
             start(v, PHONE);
+        } else if (kind == Apps.Kind.CHAT && t >= nextTextAt) {
+            // messaging apps: he texts on his own phone, bubbles going back and forth over his head
+            autoText = true;
+            start(v, TEXT);
         }
     }
 
@@ -770,7 +786,7 @@ final class Fun {
             System.arraycopy(recentActs, 0, recentActs, 1, recentActs.length - 1);
             recentActs[0] = a;
         }
-        if (a != SNEEZE) {
+        if (a != SNEEZE && a != TEXT) { // texting: the message bubbles are his talking
             maybeSay(v, NAMES[a], a == WAVE || a == CONFETTI ? 0.8 : quick || autoPhone ? 0.12 : 0.45);
         }
         switch (a) {
@@ -1088,6 +1104,19 @@ final class Fun {
                 cardRound = t + rand(0.4, 0.9);
                 actEnd = t + span(5, 240); // a couple of shuffles, or minutes of it
                 break;
+            case TEXT:
+                textColor = TEXT_COLORS[rng.nextInt(TEXT_COLORS.length)];
+                burst = 0;
+                if (rng.nextBoolean()) { // he starts it
+                    textPhase = 0;
+                    typeFrom = t + rand(0.3, 1);
+                    nextEvent = typeFrom + rand(0.8, 3);
+                } else { // waits on them
+                    textPhase = 1;
+                    nextEvent = t + rand(0.8, 4);
+                }
+                actEnd = t + (autoText ? span(20, 300) : span(8, 150));
+                break;
             case BUBBLEWRAP:
                 wrapMode = chooseW(5, 3, 2);
                 newWrap();
@@ -1145,6 +1174,127 @@ final class Fun {
                 v.kick(-1.5);
                 actEnd = t + rand(1.8, 2.9);
                 break;
+        }
+    }
+
+    /** A message bubble over his head: side 1 his, -1 theirs. kind 0 text, 1 picture, 2 heart, 3 "..." typing. */
+    static void addText(SquibView v, int side, int kind) {
+        int seed = rng.nextInt(1 << 24);
+        int w = kind == 1 ? 14 : kind == 2 ? 11 : kind == 3 ? 11 : 10 + rng.nextInt(17);
+        texts.add(new double[]{v.t, side, w, kind, seed, -textH(kind, seed), -1});
+    }
+
+    static void dropTyping() {
+        for (int i = texts.size() - 1; i >= 0; i--) {
+            if (texts.get(i)[3] == 3) {
+                texts.remove(i);
+            }
+        }
+    }
+
+    /** Height of a bubble in T pixels. */
+    static int textH(int kind, int seed) {
+        return kind == 1 ? 12 : kind == 2 ? 9 : kind == 3 ? 5 : seed % 3 == 0 ? 7 : 5;
+    }
+
+    /** Moves the bubbles: newest at the bottom, older ones pushed up, then fading. */
+    static void textTick(SquibView v, double t, double dt) {
+        if (!v.visible() || inMc) {
+            texts.clear();
+            return;
+        }
+        double stack = 0;
+        int n = 0;
+        for (int i = texts.size() - 1; i >= 0; i--) {
+            double[] m = texts.get(i);
+            m[5] += (stack - m[5]) * Math.min(1, dt * 9);
+            stack += textH((int) m[3], (int) m[4]) + 2;
+            if (m[6] < 0 && (n >= 4 || t - m[0] > 14)) {
+                m[6] = t;
+            }
+            if (m[6] >= 0 && t - m[6] > 0.5) {
+                texts.remove(i);
+                continue;
+            }
+            n++;
+        }
+    }
+
+    static void rectT(Canvas c, float x0, float y0, float x1, float y1, int color, int a) {
+        ink.setColor(color);
+        ink.setAlpha(Math.max(0, Math.min(255, a * (color >>> 24) / 255)));
+        c.drawRect(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), ink);
+        ink.setColor(0xFF1D1D1D);
+    }
+
+    /** Draws the bubbles in small pixels (T), like a chat in a film: his on the right, theirs on the left. */
+    static void drawTexts(SquibView v, Canvas c, float lift) {
+        if (texts.isEmpty()) {
+            return;
+        }
+        float T = v.T, S = v.S, cx = center(v);
+        float base = sy(v, top(v), lift) - 4 * S; // clear of the headphones
+        double t = v.t;
+        for (double[] m : texts) {
+            int side = (int) m[1], kind = (int) m[3], seed = (int) m[4];
+            int w = (int) m[2], h = textH(kind, seed);
+            int a = m[6] >= 0 ? (int) (255 * (1 - (t - m[6]) / 0.5)) : (int) Math.min(255, 255 * (t - m[0]) / 0.15);
+            float bottom = base - Math.round(m[5]) * T, top = bottom - h * T;
+            float left = side > 0 ? cx + 14 * T - w * T : cx - 14 * T;
+            left = clamp(left, 4 * v.d, v.screenW - 4 * v.d - w * T);
+            float right = left + w * T;
+            boolean mine = side > 0;
+            int fill = mine ? Art.color(Props.light(textColor)) : Art.color('p');
+            int mark = mine ? Art.color(Props.PAIRS[textColor].charAt(1)) : Art.color('h');
+            rectT(c, left + T, top, right - T, bottom, fill, a); // rounded box
+            rectT(c, left, top + T, right, bottom - T, fill, a);
+            float tail = mine ? right - T : left; // little tail at the bottom corner, on the sender's side
+            rectT(c, tail, bottom - T, tail + T, bottom + T, fill, a);
+            int r = seed;
+            switch (kind) {
+                case 1: { // a photo: sky, ground, sun
+                    int sky = Props.light(new int[]{2, 8, 4, 1}[seed % 4]), ground = Props.light(new int[]{3, 3, 1, 5}[(seed >> 3) % 4]);
+                    rectT(c, left + 2 * T, top + 2 * T, right - 2 * T, top + 6 * T, Art.color((char) sky), a);
+                    rectT(c, left + 2 * T, top + 6 * T, right - 2 * T, bottom - 2 * T, Art.color((char) ground), a);
+                    float sx0 = left + (3 + (seed >> 6) % 6) * T;
+                    rectT(c, sx0, top + 3 * T, sx0 + 2 * T, top + 5 * T, Art.color('w'), a);
+                    break;
+                }
+                case 2: { // a heart
+                    for (int y = 0; y < 6; y++) {
+                        for (int x = 0; x < 7; x++) {
+                            if ((HEART_ROWS[y] >> (6 - x) & 1) != 0) {
+                                rectT(c, left + (2 + x) * T, top + (2 + y) * T, left + (3 + x) * T, top + (3 + y) * T, Art.color('r'), a);
+                            }
+                        }
+                    }
+                    break;
+                }
+                case 3: { // "..." while they type
+                    int on = (int) (t * 3) % 3;
+                    for (int k = 0; k < 3; k++) {
+                        float x = left + (3 + k * 2) * T, y = top + 2 * T - (k == on ? T : 0);
+                        rectT(c, x, y, x + T, y + T, k == on ? mark : Art.color('q'), a);
+                    }
+                    break;
+                }
+                default: { // lines of words
+                    int lines = h == 7 ? 2 : 1;
+                    for (int li = 0; li < lines; li++) {
+                        float y = top + (2 + li * 2) * T;
+                        float end = li == lines - 1 && lines > 1 ? left + (4 + (seed >> 4) % Math.max(1, w - 6)) * T : right - 2 * T;
+                        float x = left + 2 * T;
+                        while (x < end - T) {
+                            r = r * 1103515245 + 12345;
+                            int len = 2 + ((r >>> 16) & 3);
+                            float x1 = Math.min(end, x + len * T);
+                            rectT(c, x, y, x1, y + T, mark, a);
+                            x = x1 + T;
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
 
@@ -1214,6 +1364,8 @@ final class Fun {
             double t = v.t;
             if (act == PHONE && autoPhone) { // a scroll-along session: doesn't count as an activity
                 nextPhoneAt = t + rand(15, 60);
+            } else if (act == TEXT && autoText) { // same for texting in chat apps
+                nextTextAt = t + rand(8, 40);
             } else if (act >= FIRST_FIDGET) {
                 nextFidgetAt = t + rand(fidgetGapMin, Math.max(fidgetGapMin, fidgetGapMax));
                 nextAt = Math.max(nextAt, t + 4);
@@ -1225,9 +1377,13 @@ final class Fun {
             }
             v.nextDecision = rand(2, 5);
         }
+        if (act == TEXT) {
+            dropTyping();
+        }
         act = NONE;
         objOn = false;
         autoPhone = false;
+        autoText = false;
         showing = false;
     }
 
@@ -2597,6 +2753,75 @@ final class Fun {
                 }
                 break;
             }
+            case TEXT: {
+                if (autoText && v.kindNow() != Apps.Kind.CHAT) {
+                    end(v);
+                    break;
+                }
+                v.lookX = 0;
+                v.lookY = 1;
+                arm(v, false, 1);
+                arm(v, true, 1);
+                if (textPhase == 0) { // reads, then thumbs going
+                    if (t >= typeFrom) {
+                        int k = ((int) (t * 9)) % 2;
+                        arm(v, false, 1 + k);
+                        arm(v, true, 2 - k);
+                    }
+                    if (t >= nextEvent) { // sends it
+                        double r = rng.nextDouble();
+                        addText(v, 1, r < 0.07 ? 2 : r < 0.13 ? 1 : 0);
+                        v.kick(0.6);
+                        if (burst < 3 && rng.nextDouble() < 0.3) { // and another one
+                            burst++;
+                            typeFrom = t + 0.2;
+                            nextEvent = t + rand(0.6, 2);
+                        } else {
+                            burst = 0;
+                            textPhase = 1;
+                            nextEvent = t + (rng.nextDouble() < 0.2 ? span(4, 25) : rand(1, 5));
+                        }
+                    }
+                } else if (textPhase == 1) { // waiting on a reply
+                    if (t - typeFrom > 6 && ((int) (t / 2.5)) % 3 == 0) {
+                        v.lookY = 0; // glances up while it takes a while
+                    }
+                    if (t >= nextEvent) {
+                        if (t > actEnd) {
+                            end(v);
+                            break;
+                        }
+                        textPhase = 2;
+                        addText(v, -1, 3);
+                        nextEvent = t + rand(1, 4);
+                    }
+                } else if (t >= nextEvent) { // their "..." turns into a message
+                    dropTyping();
+                    double r = rng.nextDouble();
+                    addText(v, -1, r < 0.08 ? 2 : r < 0.16 ? 1 : 0);
+                    r = rng.nextDouble();
+                    if (r < 0.25) {
+                        v.happyFor = 1;
+                    } else if (r < 0.32) {
+                        v.surpriseFor = 0.6;
+                    } else if (r < 0.36) {
+                        v.annoyedFor = 0.8;
+                    }
+                    if (burst < 2 && rng.nextDouble() < 0.3) { // they're sending more
+                        burst++;
+                        addText(v, -1, 3);
+                        nextEvent = t + rand(0.8, 2.5);
+                    } else if (t > actEnd && rng.nextDouble() < 0.6) {
+                        end(v); // leaves it there
+                    } else {
+                        burst = 0;
+                        textPhase = 0;
+                        typeFrom = t + rand(0.6, 2.5);
+                        nextEvent = typeFrom + rand(0.8, 3.5);
+                    }
+                }
+                break;
+            }
             case BUBBLEWRAP: {
                 v.lookX = 0;
                 v.lookY = 1;
@@ -3242,7 +3467,10 @@ final class Fun {
     static void listen(SquibView v, double t, double dt) {
         Apps.Kind kind = v.kindNow();
         if (!listening) {
-            if (v.musicOn && kind == Apps.Kind.MUSIC && v.visible() && !inMc) {
+            // In a music app, or in a quiet app when the last media app you opened was a music app (Android doesn't
+            // say which app is playing, and games and scrolling apps make their own sound, so they can't start it).
+            boolean quiet = kind == Apps.Kind.HOME || kind == Apps.Kind.CHAT || kind == Apps.Kind.NAV || kind == Apps.Kind.READ;
+            if (v.musicOn && (kind == Apps.Kind.MUSIC || (quiet && v.lastMediaMusic)) && v.visible() && !inMc) {
                 listening = true;
                 beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
                 listenOn = t;
@@ -3256,8 +3484,7 @@ final class Fun {
             }
             return;
         }
-        boolean otherSound = kind == Apps.Kind.WATCH || kind == Apps.Kind.GAME || kind == Apps.Kind.SCROLL
-                || kind == Apps.Kind.HIDE;
+        boolean otherSound = kind == Apps.Kind.WATCH || kind == Apps.Kind.HIDE; // video, calls, camera
         quietFor = v.musicOn ? 0 : quietFor + dt;
         if (otherSound || quietFor > 6) { // a few seconds' grace for the gap between songs
             listening = false;
@@ -3380,6 +3607,8 @@ final class Fun {
             }
             if (helmet) {
                 put(v, c, "HELMET", 0, (6 - v.squashLevel) - 1, top(v) - 2, lift, 255);
+            } else {
+                drawHeadphones(v, c, lift);
             }
             if (itemOverride != null) {
                 held(v, c, lift, itemOverride, right, false, false);
@@ -3399,6 +3628,7 @@ final class Fun {
             }
         }
         drawHeadphones(v, c, lift);
+        drawTexts(v, c, lift);
         switch (act) {
             case BALL:
                 drawBmp(c, ball(ballLook, Math.round(roll / (float) (Math.PI / 4)))[0], bx - ballLook[0] / 2f * S,
@@ -3885,6 +4115,24 @@ final class Fun {
                 if (penTwirl < 0) { // the clip, on the side away from him
                     float cxp = hx + (spinHand ? 1 : -1);
                     dot(v, c, Math.round(cxp - 0.5f), Math.round(hy - 2.5f - 0.5f), Art.color((char) penClip), 255, lift);
+                }
+                break;
+            }
+            case TEXT: { // his phone, screen facing him: a chat, with the keyboard up while he types
+                int px = 12, py = armRow(v) + 2;
+                boolean typing = textPhase == 0 && v.t >= typeFrom;
+                for (int y = 0; y < 7; y++) {
+                    for (int x = 0; x < 5; x++) {
+                        char ch = 'e';
+                        if (x >= 1 && x <= 3 && y >= 1 && y <= 5) {
+                            if (typing && y >= 4) {
+                                ch = ((x + y + (int) (v.t * 9)) % 3 == 0) ? 'w' : 'q'; // keys lighting up
+                            } else {
+                                ch = (y % 2 == 1) == (x == 3) ? Props.light(textColor) : 'w';
+                            }
+                        }
+                        dot(v, c, px + x, py + y, Art.color(ch), 255, lift);
+                    }
                 }
                 break;
             }

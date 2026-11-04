@@ -584,14 +584,14 @@ final class Lines {
             "{mins} minutes of feed.",
             "it's been {mins} minutes."};
     static String[] CHAT_ENTER = {
-            "*looks away* go ahead.",
-            "i won't read it.",
-            "*covers eyes*",
-            "privacy mode.",
             "messages. ok.",
+            "*gets his phone out*",
+            "ok. texting.",
             "type away.",
-            "*turns around*",
-            "chat time."};
+            "i've got messages too.",
+            "we're both texting now.",
+            "chat time.",
+            "*checks his own messages*"};
     static String[] GAME_ENTER = {
             "game time.",
             "let's see it.",

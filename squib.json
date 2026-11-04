@@ -612,14 +612,14 @@
       "it's been {mins} minutes."
     ],
     "CHAT_ENTER": [
-      "*looks away* go ahead.",
-      "i won't read it.",
-      "*covers eyes*",
-      "privacy mode.",
       "messages. ok.",
+      "*gets his phone out*",
+      "ok. texting.",
       "type away.",
-      "*turns around*",
-      "chat time."
+      "i've got messages too.",
+      "we're both texting now.",
+      "chat time.",
+      "*checks his own messages*"
     ],
     "GAME_ENTER": [
       "game time.",
@@ -1584,7 +1584,9 @@
       "jp.naver.line.android",
       "com.kakao.talk",
       "com.google.android.gm",
-      "com.microsoft.office.outlook"
+      "com.microsoft.office.outlook",
+      "com.beeper.android",
+      "com.beeper.chat"
     ],
     "GAME": [
       "com.mojang.minecraftpe",

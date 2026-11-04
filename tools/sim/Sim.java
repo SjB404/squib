@@ -45,6 +45,8 @@ public class Sim {
         Fun.december = false;
         Fun.listening = false;
         Fun.listenOff = -1;
+        Fun.texts.clear();
+        Fun.autoText = false;
         java.util.Arrays.fill(Fun.recentActs, 0);
         SquibView v = new SquibView(ctx);
         v.onScreen(W, H, 80, 130);
@@ -184,8 +186,16 @@ public class Sim {
             capture("LISTEN_along", v, 24, 15, 260, null);
             v.setApp("com.android.launcher");
             capture("LISTEN_home", v, 10, 10, 260, null);
+            v.setApp("com.beeper.android");
+            capture("LISTEN_chat", v, 30, 15, 400, null);
             v.musicOn = false;
             capture("LISTEN_off", v, 8, 10, 260, null);
+        }
+        if (only == null || only.contains("CHAT")) {
+            SquibView v = fresh();
+            v.setApp("com.beeper.android");
+            Fun.nextTextAt = 0;
+            capture("CHAT", v, 45, 20, 400, null);
         }
         if (only == null || only.contains("HATS")) {
             List<BufferedImage> frames = new ArrayList<>();
