@@ -198,6 +198,9 @@ final class Fun {
     static double musicFor, pkgSince;
     /** Last reason the headphones didn't go on, so it's logged once per change. */
     static String blockedWhy;
+    /** The app on screen when the current sound started, and whether that app makes its own sound. */
+    static String soundFrom;
+    static boolean soundFromApp;
     /** The app on screen, and whether it's been quiet in it for a bit (games make sound as soon as they open). */
     static String listenPkg;
     static boolean quietInApp;
@@ -3574,6 +3577,14 @@ final class Fun {
      */
     static void listen(SquibView v, double t, double dt) {
         Apps.Kind kind = v.kindNow();
+        if (v.musicOn && musicFor == 0) {
+            // The sound just started: note which app was on screen. If that app makes its own sound (game,
+            // scrolling feed, video), the sound is probably its, even after you leave it, until it stops.
+            soundFrom = v.pkg;
+            soundFromApp = kind == Apps.Kind.WATCH || kind == Apps.Kind.SCROLL || kind == Apps.Kind.HIDE
+                    || (kind == Apps.Kind.GAME && !quietInApp);
+            Trace.d("headphones", "sound started in " + v.pkg + " (" + kind + ")" + (soundFromApp ? ": counted as that app's own sound" : ""));
+        }
         musicFor = v.musicOn ? musicFor + dt : 0;
         if (v.pkg != null && !v.pkg.equals(listenPkg)) {
             listenPkg = v.pkg;
@@ -3589,12 +3600,13 @@ final class Fun {
             // make their own sound, so they can't start it. Games make sound from the start, so in a game it only
             // starts if it was quiet for a while in that game first (you put music on during it).
             boolean other = kind != Apps.Kind.WATCH && kind != Apps.Kind.HIDE && kind != Apps.Kind.SCROLL
-                    && (kind != Apps.Kind.GAME || quietInApp) && !v.lastMediaVideo;
+                    && (kind != Apps.Kind.GAME || quietInApp) && !v.lastMediaVideo && !soundFromApp;
             // A music app: 1.5 seconds of music. Anywhere else: 3, so a short sound can't do it. Never while his own
             // settings are open (nothing plays there).
             boolean longEnough = musicFor >= (kind == Apps.Kind.MUSIC ? 1.5 : 3);
             String why = !longEnough ? null : v.ownAppOpen ? "his own settings are open" : !v.visible() ? "he's hidden"
-                    : kind == Apps.Kind.MUSIC || other ? null : v.lastMediaVideo ? "last media app opened was a video app"
+                    : kind == Apps.Kind.MUSIC || other ? null : soundFromApp ? "the sound started in " + soundFrom + ", it's that app's sound"
+                    : v.lastMediaVideo ? "last media app opened was a video app"
                     : kind == Apps.Kind.GAME ? "game hasn't been quiet yet" : "app type " + kind + " can't start them";
             if (why != null && !why.equals(blockedWhy)) {
                 Trace.d("headphones", "music playing " + String.format(java.util.Locale.US, "%.1f", musicFor) + "s but not putting them on: " + why);
