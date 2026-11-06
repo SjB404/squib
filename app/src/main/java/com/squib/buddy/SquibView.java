@@ -470,6 +470,12 @@ final class SquibView extends View {
         if (this.touching && !this.dragging && !this.petting && this.t - this.downAt > 0.45d) {
             startPetting();
         }
+        // A finger on him (held down or petting): he stays where he is instead of walking out from under it.
+        boolean held = (this.touching || this.petting) && !this.dragging;
+        if (held && (this.motion == Motion.WANDER || this.motion == Motion.CHASE)) {
+            Trace.d("touch", "held: stops " + this.motion + " and stays still");
+            setMotion(Motion.IDLE);
+        }
         switch (this.motion) {
             case FALL:
                 double d3 = this.vy;
@@ -497,6 +503,9 @@ final class SquibView extends View {
                 }
                 break;
             case IDLE:
+                if (held) {
+                    break; // no walking, hopping or chasing while being held or petted
+                }
                 if (!this.shrimpOn) {
                     if (kindNow() == Apps.Kind.WATCH) {
                         this.seated = true;
@@ -1055,6 +1064,8 @@ final class SquibView extends View {
                     setMotion(Motion.FALL);
                 } else if (this.petting) {
                     this.petting = false;
+                    // stays put a moment after the petting stops, so he doesn't walk off the second you let go
+                    this.nextDecision = Math.max(this.nextDecision, (this.rng.nextDouble() * 3.0d) + 2.0d);
                 } else if (motionEvent.getActionMasked() == 1) {
                     tap();
                 }

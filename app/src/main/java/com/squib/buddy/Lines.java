@@ -1373,6 +1373,12 @@ final class Lines {
             "none left on this one.",
             "*checks for any he missed*",
             "done. there's more."};
+    static String[] SPRING = {
+            "spring toy.",
+            "hand to hand.",
+            "over the top.",
+            "no stairs here, so hands.",
+            "back the other way."};
     static String[] TOSS = {
             "paper toss.",
             "bin's over there.",

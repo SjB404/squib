@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 5, 3, 4};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -190,6 +190,19 @@ final class Fun {
     static float binX;
     static int tossWant = -1;
 
+    // ---------- spring toy: a coil of rings poured from hand to hand, over his head ----------
+    static final int RING_N = 8;
+    /** Each ring takes RING_FLY seconds to go over, RING_GAP after the one before, so they stay close like one coil. */
+    static final double RING_GAP = 0.08, RING_FLY = 0.9;
+    /** Ring colours (PAIRS indexes): bright ones that show against him (no red, coral, orange or pink). */
+    static final int[] RING_COLORS = {1, 2, 3, 4, 8};
+    static final String[] SPRING_MODES = {"one colour", "striped", "rainbow", "metal", "drops it"};
+    /** Mode (an index of SPRING_MODES), pours left before a drop, each ring's colour bottom to top, which hand it pours from, when this pour starts. */
+    static int springMode, springDrops;
+    static final char[] ringCol = new char[RING_N];
+    static boolean springFromRight;
+    static double springRound;
+
     // ---------- headphones: on while music is actually playing in a music app ----------
     /** On while music plays. listenOn / listenOff: when they went on or came off (-1: never), for the animation. */
     static boolean listening, hpSide;
@@ -309,6 +322,11 @@ final class Fun {
         char l = Props.PAIRS[i].charAt(0), k = Props.PAIRS[i].charAt(1);
         String edge = "" + k + k + k, mid = "" + k + l + k;
         return new String[]{edge, mid, mid, edge};
+    }
+
+    /** One ring of the spring toy: 4 x 1 grid pixels in one colour. */
+    static Bitmap ringBmp(char col) {
+        return bmp("RING" + col, new String[]{"" + col + col + col + col})[0];
     }
 
     /** How many cards to draw for a stack: thicker as it grows. */
@@ -513,6 +531,7 @@ final class Fun {
             case BUBBLEWRAP: return "bubble wrap";
             case TEXT: return "texting";
             case TOSS: return "paper toss";
+            case SPRING: return "spring toy";
             case HULA: return "hula hoop";
             case YOYO: return "yo-yo";
             default: return NAMES[a].toLowerCase();
@@ -542,6 +561,7 @@ final class Fun {
             case CARDS: return new String[]{"riffle", "card spring", "drops them"};
             case BUBBLEWRAP: return WRAP_MODES;
             case TOSS: return new String[]{"gets them in", "misses"};
+            case SPRING: return SPRING_MODES;
             default: return null;
         }
     }
@@ -712,6 +732,10 @@ final class Fun {
         return WAVE;
     }
 
+    /**
+     * The random fidget timer. TEXT isn't in it (its weight is 0): he only texts in messaging apps, or when
+     * it's picked in his settings.
+     */
     static int pickFidget(SquibView v) {
         int[] options = new int[NAMES.length - FIRST_FIDGET];
         for (int i = 0; i < options.length; i++) {
@@ -1154,6 +1178,27 @@ final class Fun {
                 mark = t + rand(0.6, 1.2); // crumpling
                 actEnd = t + 600;
                 break;
+            case SPRING: {
+                // Colours are data: one pair in light and dark, two pairs striped, a run of colours, or a metal.
+                springMode = chooseW(3, 3, 2, 2, 1);
+                int ai = rng.nextInt(RING_COLORS.length);
+                int ca = RING_COLORS[ai], cb = RING_COLORS[(ai + 1 + rng.nextInt(RING_COLORS.length - 1)) % RING_COLORS.length];
+                String metal = Props.METAL_PAIRS[rng.nextInt(2)]; // gold or silver
+                int from = rng.nextInt(RING_COLORS.length), step = rng.nextBoolean() ? 1 : RING_COLORS.length - 1;
+                for (int i = 0; i < RING_N; i++) {
+                    switch (springMode) {
+                        case 1: ringCol[i] = Props.light(i % 2 == 0 ? ca : cb); break;
+                        case 2: ringCol[i] = Props.light(RING_COLORS[(from + i * step) % RING_COLORS.length]); break;
+                        case 3: ringCol[i] = metal.charAt(i % 2); break;
+                        default: ringCol[i] = Props.PAIRS[ca].charAt(i % 2); break;
+                    }
+                }
+                springFromRight = right(v);
+                springDrops = 1 + rng.nextInt(3);
+                springRound = t + rand(0.4, 0.9);
+                actEnd = t + span(6, 240); // a few pours, or minutes of it
+                break;
+            }
             case BUBBLEWRAP:
                 wrapMode = chooseW(5, 3, 2);
                 newWrap();
@@ -3035,6 +3080,50 @@ final class Fun {
                 }
                 break;
             }
+            case SPRING: {
+                boolean from = springFromRight;
+                arm(v, from, 2);
+                arm(v, !from, 1);
+                double rt = t - springRound;
+                double total = (RING_N - 1) * RING_GAP + RING_FLY;
+                v.lookX = ((rt < total / 2) == from) ? 1 : -1; // follows the rings over
+                v.lookY = 0;
+                if (phase == 1) { // dropped it
+                    if (t >= mark) {
+                        end(v);
+                    }
+                    break;
+                }
+                if (springMode == 4 && springDrops <= 0 && rt >= total / 2) {
+                    // halfway over, it slips: every ring falls to the floor
+                    float hx = (handPx(v, from) + handPx(v, !from)) / 2f, hy = handPy(v, from) - 5;
+                    for (int i = 0; i < RING_N; i++) {
+                        v.spawn(ringBmp(ringCol[i]), sx(v, hx - 2), sy(v, hy - i * 0.5f, v.lift()), (float) rand(-90, 90) * d,
+                                -(float) rand(10, 70) * d, (float) rand(0.8, 1.1), 600 * d, 0, 0.6f, S, true);
+                    }
+                    Trace.d("act", "spring toy slips and falls");
+                    phase = 1;
+                    v.annoyedFor = 1.4;
+                    mark = t + 1.6;
+                    break;
+                }
+                if (rt > total + 0.2) { // all poured over: it's upside down now, so back the other way
+                    v.kick(0.3f);
+                    for (int i = 0, j = RING_N - 1; i < j; i++, j--) {
+                        char x = ringCol[i];
+                        ringCol[i] = ringCol[j];
+                        ringCol[j] = x;
+                    }
+                    springDrops--;
+                    if (t > actEnd && springMode != 4) {
+                        end(v);
+                        break;
+                    }
+                    springFromRight = !springFromRight;
+                    springRound = t + rand(0.2, 1.2);
+                }
+                break;
+            }
             case STRESSBALL: {
                 boolean h = spinHand;
                 v.lookX = h ? 1 : -1;
@@ -3570,19 +3659,27 @@ final class Fun {
 
     // ================= headphones =================
 
+    /** The only apps whose music puts his headphones on: Spotify, SoundCloud and Apple Music. */
+    static final Set<String> HEADPHONE_APPS = new HashSet<String>(Arrays.asList(
+            "com.spotify.music", "com.spotify.lite", "com.soundcloud.android", "com.apple.android.music"));
+
     /**
-     * Headphones go on when music is actually playing (SquibView.musicOn) while a music app is open. They stay
-     * on if you leave the app and it keeps playing, until it stops for a few seconds or an app with its own
-     * sound comes up (video, games, scrolling feeds, calls and the camera).
+     * Headphones go on only when music is actually playing (SquibView.musicOn) while Spotify, SoundCloud or
+     * Apple Music is on screen. Android won't say which app is making the sound, so the app being on screen is
+     * the proof. They stay on if you leave it and the music keeps going (texting, home screen, games), and come
+     * off when it stops for a few seconds or another app with its own sound comes up: video, scrolling feeds,
+     * other music and podcast apps, calls and the camera.
      */
     static void listen(SquibView v, double t, double dt) {
         Apps.Kind kind = v.kindNow();
+        boolean musicApp = v.pkg != null && HEADPHONE_APPS.contains(v.pkg);
         if (v.musicOn && musicFor == 0) {
-            // The sound just started: note which app was on screen. If that app makes its own sound (game,
-            // scrolling feed, video), the sound is probably its, even after you leave it, until it stops.
+            // The sound just started: note which app was on screen. If that app makes its own sound (video,
+            // scrolling feed, another music or podcast app, a game), the sound is probably its, even after you
+            // leave it, until it stops.
             soundFrom = v.pkg;
-            soundFromApp = kind == Apps.Kind.WATCH || kind == Apps.Kind.SCROLL || kind == Apps.Kind.HIDE
-                    || (kind == Apps.Kind.GAME && !quietInApp);
+            soundFromApp = !musicApp && (kind == Apps.Kind.WATCH || kind == Apps.Kind.SCROLL || kind == Apps.Kind.HIDE
+                    || kind == Apps.Kind.MUSIC || (kind == Apps.Kind.GAME && !quietInApp));
             Trace.d("headphones", "sound started in " + v.pkg + " (" + kind + ")" + (soundFromApp ? ": counted as that app's own sound" : ""));
         }
         musicFor = v.musicOn ? musicFor + dt : 0;
@@ -3595,26 +3692,17 @@ final class Fun {
             quietInApp = true;
         }
         if (!listening) {
-            // Android doesn't say which app is playing. So: any music in a music app; in most other apps too, unless
-            // the last media app you opened was a video app (a video still playing). Scrolling feeds and video apps
-            // make their own sound, so they can't start it. Games make sound from the start, so in a game it only
-            // starts if it was quiet for a while in that game first (you put music on during it).
-            boolean other = kind != Apps.Kind.WATCH && kind != Apps.Kind.HIDE && kind != Apps.Kind.SCROLL
-                    && (kind != Apps.Kind.GAME || quietInApp) && !v.lastMediaVideo && !soundFromApp;
-            // A music app: 1.5 seconds of music. Anywhere else: 3, so a short sound can't do it. Never while his own
-            // settings are open (nothing plays there).
-            boolean longEnough = musicFor >= (kind == Apps.Kind.MUSIC ? 1.5 : 3);
+            boolean longEnough = musicFor >= 1.5;
             String why = !longEnough ? null : v.ownAppOpen ? "his own settings are open" : !v.visible() ? "he's hidden"
-                    : kind == Apps.Kind.MUSIC || other ? null : soundFromApp ? "the sound started in " + soundFrom + ", it's that app's sound"
-                    : v.lastMediaVideo ? "last media app opened was a video app"
-                    : kind == Apps.Kind.GAME ? "game hasn't been quiet yet" : "app type " + kind + " can't start them";
+                    : !musicApp ? "app on screen is " + v.pkg + ", not spotify, soundcloud or apple music"
+                    : soundFromApp ? "the sound started in " + soundFrom + ", it's that app's sound" : null;
             if (why != null && !why.equals(blockedWhy)) {
                 Trace.d("headphones", "music playing " + String.format(java.util.Locale.US, "%.1f", musicFor) + "s but not putting them on: " + why);
             }
             blockedWhy = why;
-            if (longEnough && !v.ownAppOpen && (kind == Apps.Kind.MUSIC || other) && v.visible()) {
+            if (longEnough && why == null) {
                 Trace.i("headphones", "ON: music playing " + String.format(java.util.Locale.US, "%.1f", musicFor) + "s, app " + v.pkg
-                        + " (" + kind + "), last media app was video: " + v.lastMediaVideo + ", game quiet first: " + quietInApp);
+                        + " (" + kind + ")");
                 listening = true;
                 beatGap = rand(0.42, 0.62); // each song gets its own speed of nodding
                 listenOn = t;
@@ -3628,7 +3716,9 @@ final class Fun {
             }
             return;
         }
-        boolean otherSound = kind == Apps.Kind.WATCH || kind == Apps.Kind.HIDE; // video, calls, camera
+        // video, calls, camera, scrolling feeds, and music or podcast apps other than the three
+        boolean otherSound = kind == Apps.Kind.WATCH || kind == Apps.Kind.HIDE || kind == Apps.Kind.SCROLL
+                || (kind == Apps.Kind.MUSIC && !musicApp);
         quietFor = v.musicOn ? 0 : quietFor + dt;
         if (otherSound || quietFor > 6) { // a few seconds' grace for the gap between songs
             Trace.i("headphones", "OFF: " + (otherSound ? "app " + v.pkg + " (" + kind + ") has its own sound" : "quiet for 6s") + ", on for "
@@ -4337,6 +4427,32 @@ final class Fun {
                 }
                 cardAt(v, c, card, ax, ay, stackLayers(CARD_N - launched), lift);
                 cardAt(v, c, card, bxx, byy, stackLayers(landed), lift);
+                break;
+            }
+            case SPRING: {
+                if (phase == 1) {
+                    break; // on the floor, as falling rings
+                }
+                boolean from = springFromRight;
+                float ax = handPx(v, from) + 0.5f, ay = handPy(v, from) - 1;
+                float bx2 = handPx(v, !from) + 0.5f, by2 = handPy(v, !from) - 1;
+                double rt = v.t - springRound;
+                for (int j = 0; j < RING_N; j++) {
+                    int k = RING_N - 1 - j; // the top ring goes first and lands at the bottom
+                    double p = Math.max(0, (rt - j * RING_GAP) / RING_FLY);
+                    float x, y;
+                    if (p <= 0) {
+                        x = ax;
+                        y = ay - k;
+                    } else if (p >= 1) {
+                        x = bx2;
+                        y = by2 - j;
+                    } else { // an arch over his head
+                        x = (float) (ax + (bx2 - ax) * p);
+                        y = (float) ((ay - k) + ((by2 - j) - (ay - k)) * p - 7 * 4 * p * (1 - p));
+                    }
+                    drawBmp(c, ringBmp(ringCol[k]), sx(v, Math.round(x - 2)), sy(v, Math.round(y), lift), v.S, 255);
+                }
                 break;
             }
             case STRESSBALL: {
