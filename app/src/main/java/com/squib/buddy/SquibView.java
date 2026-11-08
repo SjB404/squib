@@ -26,6 +26,8 @@ final class SquibView extends View {
     static final int BLUSH = -875894;
     static final int CORAL = -2591146;
     static final int EYE = -15658735;
+    /** The anger mark (drawAnger). */
+    static final int ANGER = 0xFFE8302C;
     static final int GH = 20;
     static final int GW = 28;
     static final int INK = -14737891;
@@ -870,7 +872,7 @@ final class SquibView extends View {
                 this.lookY = this.perched ? 1 : 0;
             }
         }
-        if (this.petting) {
+        if (this.petting && this.annoyedFor <= 0.0d) {
             double d3 = this.heartIn - d;
             this.heartIn = d3;
             if (d3 <= 0.0d) {
@@ -1102,12 +1104,21 @@ final class SquibView extends View {
         this.petting = true;
         this.heartIn = 0.0d;
         if (this.motion == Motion.SLEEP) {
-            setMotion(Motion.IDLE);
+            wokenUp();
         }
         this.prefs.edit().putInt("pets", this.prefs.getInt("pets", 0) + 1).apply();
         if (this.speech == null) {
             say(Pick.one(Lines.PET), 0.0d);
         }
+    }
+
+    /** Booped or petted while he was asleep: he wakes up annoyed (the anger mark) and says so. */
+    void wokenUp() {
+        Trace.d("touch", "woken up: annoyed");
+        setMotion(Motion.IDLE);
+        this.annoyedFor = 3.5d;
+        this.kick(2.5d);
+        say(Pick.one(Lines.WOKE_GRUMPY), 0.0d);
     }
 
     void tap() {
@@ -1126,9 +1137,7 @@ final class SquibView extends View {
         kick(3.0d);
         this.prefs.edit().putInt("boops", this.prefs.getInt("boops", 0) + 1).apply();
         if (this.motion == Motion.SLEEP) {
-            setMotion(Motion.IDLE);
-            this.surpriseFor = 0.6d;
-            say(Fun.bedtime ? Pick.one(Lines.WOKE_NAG) : "huh? i'm up! i'm up.", 0.0d);
+            wokenUp();
         } else {
             if (this.taps.size() >= 5) {
                 this.taps.clear();
@@ -1464,6 +1473,33 @@ final class SquibView extends View {
             Fun.draw(this, canvas, lift);
             if (this.speech != null) {
                 drawBubble(canvas, lift);
+            }
+            if (this.face == Face.ANNOYED && this.motion != Motion.SLEEP) { // over the bubble, which sits right above his head
+                drawAnger(canvas, lift);
+            }
+        }
+    }
+
+    /**
+     * The anger mark just above the corner of his head while he's annoyed: four red corners pointing in, each
+     * 3 of his pixels (a 2 x 2 with the outer one left out), 5 x 5 in all. It throbs, the corners jumping apart
+     * a pixel and back.
+     */
+    void drawAnger(Canvas canvas, float lift) {
+        boolean throb = ((int) (this.t * 3.0d)) % 3 == 0;
+        int gap = throb ? 3 : 1;
+        int left = throb ? 19 : 20, top = Fun.top(this) - (throb ? 6 : 5);
+        float s = this.S;
+        for (int q = 0; q < 4; q++) {
+            boolean r = q % 2 == 1, low = q >= 2;
+            int bx = left + (r ? 2 + gap : 0), by = top + (low ? 2 + gap : 0);
+            int ox = r ? bx + 1 : bx, oy = low ? by + 1 : by; // the outer pixel, left out
+            for (int c = 0; c < 4; c++) {
+                int gx = bx + c % 2, gy = by + c / 2;
+                if (gx != ox || gy != oy) {
+                    float x = Fun.sx(this, gx), y = Fun.sy(this, gy, lift);
+                    Fun.rectT(canvas, x, y, x + s, y + s, ANGER, 255);
+                }
             }
         }
     }

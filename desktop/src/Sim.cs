@@ -183,6 +183,34 @@ namespace Squib
                 }
                 Say("drew MC");
             }
+            if (only == null || only.Contains("ANGER"))
+            {
+                // the anger mark: still and throbbing, on the floor, seated and on a cloud; then a boop while he sleeps
+                var frames = new List<SD.Bitmap>(); var labels = new List<string>();
+                foreach (string where in new[] { "floor", "seated", "cloud" })
+                    foreach (double at in new[] { 0.4, 0.0 })
+                    {
+                        SquibView v = Fresh();
+                        if (where == "cloud") { v.setApp("CHAT|discord"); Fun.trick(v, "FISHING", -1); Fun.end(v); v.perched = true; }
+                        if (where == "seated") v.seated = true;
+                        RunFor(v, 0.5);
+                        double t0 = v.t - v.t % 1.0 + 1.0 + at; // throbs for the first third of each second
+                        while (v.t < t0) { SystemClock.Fake += 33; v.annoyedFor = 1; v.step(); }
+                        v.speech = null;
+                        frames.Add(Shot(v, 150)); labels.Add(where + (at == 0 ? " throb" : ""));
+                    }
+                SquibView z = Fresh();
+                z.setMotion(SquibView.Motion.SLEEP);
+                RunFor(z, 1);
+                frames.Add(Shot(z, 150)); labels.Add("asleep");
+                float bx = z.posX + z.S * 14, by = z.posY - z.S * 6;
+                z.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 0, bx, by));
+                SystemClock.Fake += 80;
+                z.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 1, bx, by));
+                for (int i = 0; i < 6; i++) { RunFor(z, 0.8); frames.Add(Shot(z, 150)); labels.Add("booped +" + (0.8 * (i + 1)).ToString("0.0") + "s " + z.face); }
+                Sheet("ANGER", frames, labels);
+                Say("drew ANGER");
+            }
             if (only == null || only.Contains("HATS"))
             {
                 var frames = new List<SD.Bitmap>(); var labels = new List<string>();
@@ -363,6 +391,25 @@ namespace Squib
                 for (int i = 0; i < (clicks % 3 == 0 ? 150 : 20); i++) { SystemClock.Fake += 33; v.step(); touch.Unstick(); watch(); }
             }
             Say("clicks: the old order gets him stuck in DRAG; " + clicks + " clicks in the desktop's order never moved or stuck him");
+
+            // booped or petted while asleep: wakes up annoyed (anger mark), no hearts while he is
+            for (int how = 0; how < 2; how++)
+            {
+                SquibView w = Fresh();
+                w.setMotion(SquibView.Motion.SLEEP);
+                RunFor(w, 1);
+                Touch tw = new Touch(w);
+                float x = w.posX + w.S * 14, y = w.posY - w.S * 6;
+                tw.Press(SystemClock.Fake.Value, x, y);
+                if (how == 0) { SystemClock.Fake += 80; tw.Release(SystemClock.Fake.Value, x, y, false); }
+                else w.startPetting();
+                RunFor(w, 1);
+                if (w.motion == SquibView.Motion.SLEEP || w.face != SquibView.Face.ANNOYED || w.speech == null)
+                    throw new Exception((how == 0 ? "booped" : "petted") + " awake but not annoyed: " + w.motion + ", " + w.face);
+                if (how == 1 && w.heartIn != 0) throw new Exception("hearts while annoyed at being woken");
+                tw.Release(SystemClock.Fake.Value, x, y, false);
+            }
+            Say("woken: booped or petted while asleep, he wakes up annoyed with no hearts");
         }
 
         static void Stress(double hours)

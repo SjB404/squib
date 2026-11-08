@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58, TOP = 59,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58, TOP = 59, RANT = 60,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING", "TOP"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING", "TOP", "RANT"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4, 5};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4, 5, 3};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -220,6 +220,8 @@ final class Fun {
     static double listenOn = -1, listenOff = -1, quietFor, nextVibe, vibeEnd, beatGap = 0.5;
     /** Spinning top: colour pair. Uses ox (where it is), ovx (drift), spinAngle (how far it's turned), gap (how long it spins), side (which way it falls). */
     static int topColor;
+    /** What he's ranting about (a RANT line), said after the opener. */
+    static String rantTopic;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
     static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
@@ -695,6 +697,9 @@ final class Fun {
         if (a == CONFETTI && !partyDay) {
             return false;
         }
+        if (a == RANT && !v.chatty) { // a rant is all talking
+            return false;
+        }
         for (int r : recentActs) {
             if (r == a) {
                 return false;
@@ -838,7 +843,7 @@ final class Fun {
             System.arraycopy(recentActs, 0, recentActs, 1, recentActs.length - 1);
             recentActs[0] = a;
         }
-        if (a != SNEEZE && a != TEXT) { // texting: the message bubbles are his talking
+        if (a != SNEEZE && a != TEXT && a != RANT) { // texting: the message bubbles are his talking; a rant says its own lines
             maybeSay(v, NAMES[a], a == WAVE || a == CONFETTI ? 0.8 : quick || autoPhone ? 0.12 : 0.45);
         }
         switch (a) {
@@ -1208,6 +1213,15 @@ final class Fun {
                 newWrap();
                 nextEvent = t + rand(0.5, 1.2); // looks it over first
                 actEnd = t + span(6, 240); // one sheet, or a few minutes of sheets
+                break;
+            case RANT:
+                // "you know what bugs me?", then the thing, then maybe "anyway." Annoyed (the anger mark) until the end.
+                rantTopic = Pick.one(Lines.RANT);
+                v.say(Pick.one(Lines.RANT_START), 0);
+                v.annoyedFor = 1;
+                v.kick(2);
+                nextEvent = t + rand(0.4, 0.7);
+                actEnd = t + 60;
                 break;
             case TOP:
                 topColor = choose(Props.PAIRS.length);
@@ -2827,6 +2841,41 @@ final class Fun {
                             end(v);
                         }
                     }
+                }
+                if (t > actEnd) {
+                    end(v);
+                }
+                break;
+            }
+            case RANT: {
+                boolean done = v.speech == null || !v.talking;
+                if (phase < 2) {
+                    v.annoyedFor = Math.max(v.annoyedFor, 0.3);
+                    v.lookX = 0;
+                    v.lookY = 0;
+                    if (phase == 1) { // waves his arms about while he gets it out
+                        int k = ((int) (el * 5)) % 2;
+                        v.armLiftL = 1 + k;
+                        v.armLiftR = 2 - k;
+                    }
+                    if (t >= nextEvent) { // stamps now and then
+                        nextEvent = t + rand(0.5, 0.9);
+                        v.kick(phase == 1 ? 3 : 1.5);
+                    }
+                }
+                if (phase == 0 && done && (v.speech == null || v.speechClock > 0.5)) {
+                    phase = 1;
+                    v.say(rantTopic, 0.6);
+                } else if (phase == 1 && done && (v.speech == null || v.speechClock > 1.4)) {
+                    phase = 2;
+                    v.annoyedFor = 0;
+                    v.kick(-1.5);
+                    if (rng.nextDouble() < 0.6) {
+                        v.say(Pick.one(Lines.RANT_END), 0);
+                    }
+                    mark = t;
+                } else if (phase == 2 && t - mark > 1.2 && (v.speech == null || !v.talking)) {
+                    end(v);
                 }
                 if (t > actEnd) {
                     end(v);

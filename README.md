@@ -2,8 +2,8 @@
 
 Squib, the pixel squid that lives on your phone and your computer, and everything he says.
 
-- **Get the phone app:** [apk/Squib.apk](apk/Squib.apk) (version 1.19.0). The version is shown under his name at the top of his settings, and in the line at the bottom. It installs over earlier versions.
-- **Get the Windows app:** [desktop/Squib.exe](desktop/Squib.exe) (version 1.19.0, the same). Put it anywhere and run it: nothing to install. See [Squib on Windows](#squib-on-windows).
+- **Get the phone app:** [apk/Squib.apk](apk/Squib.apk) (version 1.19.0; 1.20.0 is in the code and needs an APK build, see [Building](#building)). The version is shown under his name at the top of his settings, and in the line at the bottom. It installs over earlier versions.
+- **Get the Windows app:** [desktop/Squib.exe](desktop/Squib.exe) (version 1.20.0). Put it anywhere and run it: nothing to install. See [Squib on Windows](#squib-on-windows).
 - **His lines:** `squib.json`. Both apps download it from here, so edits show up without a new app.
 - **The code:** `app/` is the phone app, a normal Android project. `desktop/` is the Windows app, which runs the phone app's own code (see [One squid, two apps](#one-squid-two-apps)).
 
@@ -65,7 +65,7 @@ The port understands the plain Java squib is written in. Keep to it: Java 8, no 
 
 ### lines
 
-There are 1274 lines in 152 groups. His tone is neutral and dry: plain observations, not rude, not preachy, not cute. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1323 lines in 156 groups. His tone is neutral and dry: plain observations, not rude, not preachy, not cute. The exceptions are being woken up (WOKE_GRUMPY) and rants (RANT), where he is openly annoyed, but at things, never at you. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -86,6 +86,8 @@ There are 1274 lines in 152 groups. His tone is neutral and dry: plain observati
 | LATE_NIGHT | bedtime nagging after that, up to 5 hours into bedtime (1am to 5am by default) |
 | BEDTIME | when he goes to sleep for the night |
 | WOKE_NAG | when he wakes up at night to tell you to go to bed, or when the screen comes back on (or you come back to the computer) at night |
+| WOKE_GRUMPY | when you boop or pet him awake, any time of day (1.20.0). He's annoyed for a few seconds, with the anger mark |
+| RANT_START, RANT, RANT_END | the RANT fidget: an opener ("you know what bugs me?"), the thing that annoys him, then sometimes "anyway." |
 | WATCH_ENTER, WATCH, WATCH_LONG | video apps (WATCH_LONG: after 2 hours) |
 | MUSIC_ENTER, MUSIC | music apps |
 | SCROLL, SCROLL_LONG | scrolling apps. SCROLL_LONG is said every `scrollCheckMinutes` (15) of scrolling, going through the lines in order and starting over at the end. `{mins}` becomes how long you've been scrolling |
@@ -155,7 +157,7 @@ He tells you it's late from an hour before bedtime until 5 hours into it (11pm t
 
 Every time he tells you it's late (the LATE, LATE_NIGHT and WOKE_NAG lines, including the screen-on one below and the nag button) the phone gives two light ticks. On phones with a proper haptic motor that's the crisp "tick" effect, not a buzz; older phones get the closest short tap they can do.
 
-Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line (or, after the nagging hours, a plain WAKE hello with no tick). A shorter screen-off doesn't. Tapping him wakes him too (not with click-through on). When woken like that he stays up for 15 to 25 seconds, then lies down again.
+Turning the screen back on after it's been off for 10+ minutes also wakes him, with a WOKE_NAG line (or, after the nagging hours, a plain WAKE hello with no tick). A shorter screen-off doesn't. Tapping or petting him wakes him too (not with click-through on), and he's annoyed about it (1.20.0, see [Woken up](#woken-up)). When woken like that he stays up for 15 to 25 seconds, then lies down again.
 
 Nothing else wakes him at night. Switching apps or unlocking the phone moves him to the new app's spot but he stays asleep, and says nothing about the app. While he's awake at bedtime he stays where he is (no walking around or hopping), just looks around.
 
@@ -311,9 +313,15 @@ Every 1 to 2 hours (`activityGapMin` / `activityGapMax`), when he's standing aro
 
 He doesn't do activities while watching videos (he has popcorn), in hidden apps, or in Minecraft. Picking him up, petting him, or feeding him stops whatever he's doing. While your finger is on him (holding or petting) he stays where he is, and for a few seconds after (1.19.0).
 
+### Woken up
+
+Since 1.20.0, booping or petting him while he's asleep (bedtime, a nap, or napping while you're away from the computer) wakes him up annoyed: an annoyed face, the anger mark, a little jolt, and a WOKE_GRUMPY line ("it's 2:03 am. i was sleeping."). It lasts about 3.5 seconds; petting him during it gives no hearts until he's over it.
+
+**The anger mark:** four small red corners pointing in, one of his pixels thick (5 x 5 pixels in all), just above the top right corner of his head. It throbs (the corners jump apart and back) and shows whenever he looks annoyed: woken up, too many boops, ranting, a missed paper toss, a bad dice roll and so on.
+
 ### Fidgets
 
-Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, TOSS, SPRING or TOP. He only says something about 1 time in 8. SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, SPRING and TOP can go on for minutes. Since 1.19.0, TEXT isn't a random fidget any more: he only texts in messaging apps, or when you pick it in his settings.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, TOSS, SPRING, TOP or RANT. He only says something about 1 time in 8 (RANT always talks). SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, SPRING and TOP can go on for minutes. Since 1.19.0, TEXT isn't a random fidget any more: he only texts in messaging apps, or when you pick it in his settings.
 
 - **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
 - **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
@@ -326,7 +334,7 @@ Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` 
 - **TOSS:** scrunches up a piece of paper and throws it at a bin on the floor a little way off (bin in a random colour). It goes in (happy) or lands next to it (annoyed), 1 to about 8 throws. Bottom of the screen only. Lines: TOSS, TOSS_IN, TOSS_MISS.
 - **SPRING (1.19.0):** pours a spring toy from one hand to the other, the rings arching over his head, then back, since it's upside down now. Colours are picked each time: one colour, two colours striped, a run of colours, or gold or silver. Now and then it slips halfway over, the rings fall to the floor, and he looks annoyed. A few seconds to a few minutes. Lines: SPRING.
 - **TOP:** winds up a spinning top (any of the 11 colours) and lets it go on the floor in front of him (behind him if he's at the edge of the screen). Its stripes turn as it spins, it drifts about, bumping off him and the edges, and it wobbles more and more as it slows down, then tips onto its side. He watches it the whole time. Spins last from 3 seconds to about 40, and he often picks it up and spins it again, up to 8 times.
-
+- **RANT (1.20.0):** gets worked up about something: a RANT_START opener ("you know what pisses me off?"), then a RANT line about everyday annoyances (chargers that only work at one angle, ads louder than the video, never about you) while he waves his arms and stamps, with the anger mark. Then he calms down, sometimes with a RANT_END line ("anyway."). Not when chatty is off.
 ## Minecraft
 
 In Minecraft (and the launchers in the `minecraft` list) he gets diamond gear. Only diamond, never netherite.
@@ -363,7 +371,7 @@ He walks along the top of the taskbar (the bottom of the main screen's free area
 
 | do this | and he |
 |---|---|
-| click him | boop: a BOOP line or a heart |
+| click him | boop: a BOOP line or a heart. Asleep: wakes up annoyed (WOKE_GRUMPY, anger mark) |
 | double-click him | jets off in a cloud of ink |
 | click him 5 times fast | gets annoyed (SPAM) and inks |
 | drag him | picks him up (GRABBED). Let go to drop or throw him; he drifts down |
