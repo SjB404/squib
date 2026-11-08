@@ -15,11 +15,23 @@ get() { # url file
   [ -s "$CACHE/$2" ] || curl -sSfL -o "$CACHE/$2" "$1"
 }
 get https://raw.githubusercontent.com/Sable/android-platforms/master/android-34/android.jar android.jar
-get https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar apktool.jar
-get https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar uber-apk-signer.jar
-if [ ! -d "$CACHE/dex-tools-v2.4" ]; then
-  get https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-v2.4.zip dex2jar.zip
-  unzip -q -o "$CACHE/dex2jar.zip" -d "$CACHE"
+
+# The build tools come from GitHub releases. Where those downloads are blocked, fall back to
+# Ubuntu/Debian's packages: apt-get install dalvik-exchange apksigner zipalign
+# Their resource packer is too old for this manifest (Android 14 features), so that route reuses
+# the compiled manifest, icons and resources.arsc from the current apk/Squib.apk, sets the new
+# version in the manifest (tools/patch_manifest.py) and only swaps in the new code. It refuses
+# if app/src/main/res or the manifest changed since that APK was committed.
+SYS=0
+if ! { get https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar apktool.jar \
+    && get https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar uber-apk-signer.jar \
+    && { [ -d "$CACHE/dex-tools-v2.4" ] || { get https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-v2.4.zip dex2jar.zip \
+         && unzip -q -o "$CACHE/dex2jar.zip" -d "$CACHE"; }; }; } 2>/dev/null; then
+  for t in dalvik-exchange apksigner zipalign; do
+    command -v $t >/dev/null || { echo "GitHub downloads failed and '$t' isn't installed."; echo "Run: apt-get install dalvik-exchange apksigner zipalign"; exit 1; }
+  done
+  echo "GitHub downloads failed: using the system's dalvik-exchange and apksigner, and the resources from apk/Squib.apk"
+  SYS=1
 fi
 
 cd "$ROOT"
@@ -46,9 +58,28 @@ javac --release 8 -encoding UTF-8 -nowarn -Xlint:-options -cp "$CACHE/android.ja
 (cd "$W/classes" && jar cf ../app.jar .)
 
 # 2. java bytecode -> dex
-sh "$CACHE/dex-tools-v2.4/d2j-jar2dex.sh" -f -o "$W/classes.dex" "$W/app.jar" >/dev/null 2>&1
+if [ $SYS = 1 ]; then
+  dalvik-exchange --dex --min-sdk-version=26 --output="$W/classes.dex" "$W/app.jar"
+else
+  sh "$CACHE/dex-tools-v2.4/d2j-jar2dex.sh" -f -o "$W/classes.dex" "$W/app.jar" >/dev/null 2>&1
+fi
 mkdir -p "$W/apk"
 
+if [ $SYS = 1 ]; then
+  # 3. resources + manifest, reused from the last APK (see the note at the top)
+  LAST=$(git log -1 --format=%H -- apk/Squib.apk 2>/dev/null || true)
+  [ -n "$LAST" ] && git cat-file -e "$LAST" 2>/dev/null || { echo "can't find the commit of apk/Squib.apk (shallow clone? git fetch --depth 50)"; exit 1; }
+  if ! git diff --quiet "$LAST" -- app/src/main/res app/src/main/AndroidManifest.xml; then
+    echo "app/src/main/res or the manifest changed since apk/Squib.apk was built:"
+    echo "this route can't rebuild resources. Build with the GitHub tools or the Android SDK."
+    exit 1
+  fi
+  cp apk/Squib.apk "$W/unsigned.apk"
+  zip -q -d "$W/unsigned.apk" 'META-INF/*' classes.dex
+  (cd "$W" && unzip -q -o unsigned.apk AndroidManifest.xml -d m && python3 "$ROOT/tools/patch_manifest.py" m/AndroidManifest.xml "$CODE" "$NAME" \
+    && cd m && zip -q -d ../unsigned.apk AndroidManifest.xml && zip -q ../unsigned.apk AndroidManifest.xml)
+  (cd "$W" && zip -q unsigned.apk classes.dex)
+else
 # 3. resources + manifest, packaged by apktool
 cp -r app/src/main/res "$W/apk/res"
 mkdir -p "$W/apk/res/values"
@@ -85,14 +116,23 @@ doNotCompress:
 - resources.arsc
 - png
 EOF
-java -jar "$CACHE/apktool.jar" b "$W/apk" -o "$W/unsigned.apk" > "$W/apktool.log" 2>&1 || { cat "$W/apktool.log"; exit 1; }
+if [ $SYS = 1 ]; then APKTOOL="apktool"; else APKTOOL="java -jar $CACHE/apktool.jar"; fi
+$APKTOOL b "$W/apk" -o "$W/unsigned.apk" > "$W/apktool.log" 2>&1 || { cat "$W/apktool.log"; exit 1; }
 [ -s "$W/unsigned.apk" ] || { cat "$W/apktool.log"; echo "packaging failed"; exit 1; }
 (cd "$W" && zip -q unsigned.apk classes.dex)
+fi
 
 # 4. sign with the same key as every earlier build, so it installs over the phone's copy
-java -jar "$CACHE/uber-apk-signer.jar" -a "$W/unsigned.apk" -o "$W/signed" \
-  --ks signing/squib-debug.keystore --ksAlias androiddebugkey --ksPass android --ksKeyPass android > "$W/sign.log" 2>&1 \
-  || { cat "$W/sign.log"; exit 1; }
+if [ $SYS = 1 ]; then
+  mkdir -p "$W/signed"
+  zipalign -f -p 4 "$W/unsigned.apk" "$W/aligned.apk"
+  apksigner sign --ks signing/squib-debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android \
+    --out "$W/signed/squib.apk" "$W/aligned.apk" > "$W/sign.log" 2>&1 || { cat "$W/sign.log"; exit 1; }
+else
+  java -jar "$CACHE/uber-apk-signer.jar" -a "$W/unsigned.apk" -o "$W/signed" \
+    --ks signing/squib-debug.keystore --ksAlias androiddebugkey --ksPass android --ksKeyPass android > "$W/sign.log" 2>&1 \
+    || { cat "$W/sign.log"; exit 1; }
+fi
 ls "$W"/signed/*.apk > /dev/null 2>&1 || { cat "$W/sign.log"; echo "signing failed"; exit 1; }
 mkdir -p apk
 cp "$W"/signed/*.apk apk/Squib.apk
