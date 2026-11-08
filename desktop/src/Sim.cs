@@ -38,6 +38,7 @@ namespace Squib
                 string mode = args.Length > 1 ? args[1] : "sheets";
                 if (mode == "sheets") Sheets(args.Length > 2 ? string.Join(" ", args, 2, args.Length - 2) : null);
                 else if (mode == "picks") Picks();
+                else if (mode == "modes") Modes_();
                 else Stress(double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture));
             }
             catch (Exception e) { Say("FAILED: " + e); code = 1; }
@@ -275,6 +276,93 @@ namespace Squib
                 }
             }
             Say("picked " + n + " tricks and versions, all started, ended and went back to their spot");
+        }
+
+        // On Windows he stays on the taskbar in every app mode, and switching windows or clicking him
+        // never moves him somewhere else (it used to: chat apps sent him to a cloud in the top right).
+        static void Modes_()
+        {
+            string[] ids = { "HOME|explorer", "WATCH|vlc", "MUSIC|spotify", "SCROLL|chrome|Reddit", "CHAT|discord", "GAME|REPO", "NAV|chrome|Google Maps", "READ|kindle" };
+            int checks = 0;
+            foreach (string from in ids)
+                foreach (string to in ids)
+                {
+                    SquibView v = Fresh();
+                    v.setApp(from);
+                    RunFor(v, 0.5);
+                    float lastX = v.posX;
+                    Action watch = () =>
+                    {
+                        if (System.Math.Abs(v.posY - H) > 0.5f && v.motion != SquibView.Motion.JET)
+                            throw new Exception("left the taskbar: " + from + " -> " + to + ", y " + v.posY);
+                        if (System.Math.Abs(v.posX - lastX) > 12 * v.d)
+                            throw new Exception("jumped " + (v.posX - lastX) + " px: " + from + " -> " + to);
+                        lastX = v.posX;
+                    };
+                    v.setApp(to);
+                    for (int i = 0; i < 30; i++) { SystemClock.Fake += 33; v.step(); watch(); }
+                    float x = v.posX + v.S * 14, y = v.posY - v.S * 8;
+                    v.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 0, x, y));
+                    SystemClock.Fake += 80;
+                    v.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 1, x, y));
+                    for (int i = 0; i < 60; i++) { SystemClock.Fake += 33; v.step(); watch(); }
+                    checks++;
+                }
+            // fishing needs a cloud: it goes just above him, and he comes back down after
+            SquibView f = Fresh();
+            float x0 = f.posX;
+            Fun.trick(f, "FISHING", -1);
+            if (!f.perched || System.Math.Abs(f.posX - x0) > 13 * f.d || f.posY > H - 30 * f.d) throw new Exception("fishing cloud isn't just above him: " + f.posX + "," + f.posY);
+            while (Fun.act == Fun.FISHING) RunFor(f, 0.5);
+            RunFor(f, 0.5);
+            if (f.perched || System.Math.Abs(f.posY - H) > 0.5f) throw new Exception("didn't come back down after fishing");
+            Say("modes: " + checks + " window switches and boops, he stayed put on the taskbar; fishing cloud is right above him");
+            Clicks();
+        }
+
+        // Clicking him on Windows: WPF raises a mouse move when the window takes capture. That move
+        // used to reach the engine before the touch-down, which teleported him and left him in DRAG.
+        static void Clicks()
+        {
+            // the old order, straight into the engine: shows the bug is real
+            SquibView o = Fresh();
+            float ox = o.posX + o.S * 14, oy = o.posY - o.S * 8;
+            o.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 0, ox, oy));
+            o.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value + 80, 1, ox, oy));
+            RunFor(o, 4);
+            float bx = o.posX + o.S * 14 + 300 * o.d, by = o.posY - o.S * 8;
+            o.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 2, bx, by - 400 * o.d)); // the capture move, stale start point
+            o.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value, 0, bx, by));
+            o.onHandleTouch(MotionEvent.obtain(SystemClock.Fake.Value + 80, 1, bx, by));
+            RunFor(o, 2);
+            if (o.motion != SquibView.Motion.DRAG) throw new Exception("couldn't reproduce the old click bug (now " + o.motion + ")");
+            new Touch(o).Unstick();
+            RunFor(o, 2);
+            if (o.motion == SquibView.Motion.DRAG) throw new Exception("Unstick didn't drop him out of DRAG");
+
+            // the order the desktop sends now, through Touch
+            SquibView v = Fresh();
+            Touch touch = new Touch(v);
+            float lastX = v.posX, lastY = v.posY;
+            int clicks = 0;
+            Action watch = () =>
+            {
+                if (v.motion == SquibView.Motion.DRAG && !touch.IsDown) throw new Exception("left in DRAG after click " + clicks);
+                if (System.Math.Abs(v.posX - lastX) > 12 * v.d || (v.motion != SquibView.Motion.JET && System.Math.Abs(v.posY - lastY) > 12 * v.d))
+                    throw new Exception("jumped from " + lastX + "," + lastY + " to " + v.posX + "," + v.posY + " on click " + clicks);
+                lastX = v.posX; lastY = v.posY;
+            };
+            for (; clicks < 40; clicks++)
+            {
+                float x = v.posX + v.S * (8 + clicks % 12), y = v.posY - v.S * (4 + clicks % 9);
+                touch.Move(SystemClock.Fake.Value, x, y - 400 * v.d); // a stray move before the press: ignored
+                touch.Press(SystemClock.Fake.Value, x, y);
+                touch.Move(SystemClock.Fake.Value, x, y);             // what CaptureMouse raises
+                SystemClock.Fake += 80; v.step(); watch();
+                touch.Release(SystemClock.Fake.Value, x, y, false);
+                for (int i = 0; i < (clicks % 3 == 0 ? 150 : 20); i++) { SystemClock.Fake += 33; v.step(); touch.Unstick(); watch(); }
+            }
+            Say("clicks: the old order gets him stuck in DRAG; " + clicks + " clicks in the desktop's order never moved or stuck him");
         }
 
         static void Stress(double hours)

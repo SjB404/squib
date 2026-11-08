@@ -21,6 +21,8 @@ namespace Squib
     {
         readonly E.SharedPreferences prefs;
         E.SquibView v;
+        E.Touch touch;
+        bool touching { get { return touch != null && touch.IsDown; } }
         readonly E.Frame frame = new E.Frame();
         readonly E.Canvas canvas;
         readonly Image img = new Image();
@@ -38,11 +40,11 @@ namespace Squib
         readonly bool demo;
 
         double now, last, floorCheckAt, modeCheckAt, saveAt, topmostAt, nextQuipAt = 20;
-        bool paused, leaving, away, touching, wigglePet, menuMouseWasDown, shown;
+        bool paused, leaving, away, wigglePet, menuMouseWasDown, shown;
         DateTime pauseUntil;
         double leaveAt, awayFor, petEnergy, cursorNearFor, focusLeft;
         float curX, curY, lastCurX, lastCurY;
-        string pillText; E.Bitmap pill;
+        string pillText, lastId; E.Bitmap pill;
 
         public Host(string[] args)
         {
@@ -76,11 +78,13 @@ namespace Squib
             {
                 // keep him out of Alt+Tab and stop clicks from stealing focus
                 hwnd = new WindowInteropHelper(this).Handle;
+                HwndSource.FromHwnd(hwnd).AddHook(NoActivate);
                 SetClickThrough(prefs.getBoolean("clickThrough", false));
                 scale = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice.M11;
                 Remote.Start(Dispatcher);
                 MeasureScreen();
                 v = new E.SquibView(new E.Context((float)scale));
+                touch = new E.Touch(v);
                 v.onScreen(areaW, areaH, 0, 0);
                 tray = new Tray(this);
                 last = Clock();
@@ -98,6 +102,16 @@ namespace Squib
         }
 
         static double Clock() { return E.SystemClock.elapsedRealtime() / 1000.0; }
+
+        // Clicking him must never take focus from the window you're in: in a fullscreen game that can
+        // minimise the game and bring up whatever's behind it. WS_EX_NOACTIVATE covers most of it;
+        // answering WM_MOUSEACTIVATE with MA_NOACTIVATE covers the rest.
+        static IntPtr NoActivate(IntPtr h, int msg, IntPtr w, IntPtr l, ref bool handled)
+        {
+            if (msg != 0x0021) return IntPtr.Zero; // WM_MOUSEACTIVATE
+            handled = true;
+            return new IntPtr(3); // MA_NOACTIVATE
+        }
 
         static void GetCursor(out float x, out float y) { Native.POINT p; Native.GetCursorPos(out p); x = p.X; y = p.Y; }
 
@@ -181,6 +195,7 @@ namespace Squib
             v.cursor = new[] { curX, curY };
             v.chatty = prefs.getBoolean("chatty", true) && focusLeft <= 0;
 
+            touch.Unstick();
             v.step();
             UpdateMenu();
 
@@ -270,6 +285,12 @@ namespace Squib
                 string cls = Native.ClassName(fg);
                 if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd") id = "HOME|desktop";
                 else id = Modes.Classify(program, Native.Title(fg), Fullscreen(fg));
+            }
+            if (id != lastId)
+            {
+                // the program and the rule that matched, not the whole title (page titles can be private)
+                E.Trace.d("window", "in front: " + id + (Fullscreen(fg) ? " (fullscreen)" : ""));
+                lastId = id;
             }
             v.setApp(id);
             if (!v.visible() && menu.IsOpen) menu.Close();
@@ -592,11 +613,12 @@ namespace Squib
             var hr = new E.Rect();
             if (v.handleRect(hr) && hr.contains((int)curX, (int)curY))
             {
-                touching = true;
+                E.Trace.d("mouse", "down on him at " + (int)curX + "," + (int)curY + " (he's at " + (int)v.posX + "," + (int)v.posY + ", " + v.motion + ")");
+                touch.Press(E.SystemClock.elapsedRealtime(), curX, curY); // before CaptureMouse, which raises a mouse move
                 CaptureMouse();
-                v.onHandleTouch(E.MotionEvent.obtain(E.SystemClock.elapsedRealtime(), E.MotionEvent.ACTION_DOWN, curX + 0f, curY + 0f));
                 return;
             }
+            E.Trace.d("mouse", "down beside him at " + (int)curX + "," + (int)curY + (v.speech != null ? ": closes his bubble" : ""));
             if (v.speech != null) v.speech = null; // clicked his speech bubble
         }
 
@@ -605,25 +627,24 @@ namespace Squib
             if (!touching) return;
             float x, y;
             GetCursor(out x, out y);
-            v.onHandleTouch(E.MotionEvent.obtain(E.SystemClock.elapsedRealtime(), E.MotionEvent.ACTION_MOVE, x - areaX, y - areaY));
+            touch.Move(E.SystemClock.elapsedRealtime(), x - areaX, y - areaY);
         }
 
         protected override void OnMouseLeftButtonUp(System.Windows.Input.MouseButtonEventArgs e)
         {
             e.Handled = true;
             if (!touching) return;
-            touching = false;
-            ReleaseMouseCapture();
             float x, y;
             GetCursor(out x, out y);
-            v.onHandleTouch(E.MotionEvent.obtain(E.SystemClock.elapsedRealtime(), E.MotionEvent.ACTION_UP, x - areaX, y - areaY));
+            touch.Release(E.SystemClock.elapsedRealtime(), x - areaX, y - areaY, false);
+            ReleaseMouseCapture();
+            E.Trace.d("mouse", "up at " + (int)(x - areaX) + "," + (int)(y - areaY) + " (he's at " + (int)v.posX + "," + (int)v.posY + ", " + v.motion + ")");
         }
 
         protected override void OnLostMouseCapture(System.Windows.Input.MouseEventArgs e)
         {
             if (!touching) return;
-            touching = false;
-            v.onHandleTouch(E.MotionEvent.obtain(E.SystemClock.elapsedRealtime(), E.MotionEvent.ACTION_CANCEL, curX, curY));
+            touch.Release(E.SystemClock.elapsedRealtime(), curX, curY, true);
         }
 
         protected override void OnMouseRightButtonUp(System.Windows.Input.MouseButtonEventArgs e)

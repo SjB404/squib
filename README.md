@@ -29,7 +29,7 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 **Trying things without a phone:**
 
 - `tools/sim/run.sh` (Java 17+): `sheets` draws a picture of every activity into `build/sim/`, `stress 8` simulates 8 hours of random use and fails on any crash, and `picks` runs every activity and version the picker offers.
-- `desktop\Squib.exe --sim sheets`, `--sim stress 8` and `--sim picks` do the same with the Windows build (no Java needed), writing to `desktop\build\sim\` (`sim.txt` has the results). `--sim sheets MENU` also draws his Windows menu.
+- `desktop\Squib.exe --sim sheets`, `--sim stress 8` and `--sim picks` do the same with the Windows build (no Java needed), writing to `desktop\build\sim\` (`sim.txt` has the results). `--sim sheets MENU` also draws his Windows menu, and `--sim modes` checks that switching windows and clicking him never moves him off the taskbar.
 
 ## One squid, two apps
 
@@ -406,7 +406,7 @@ No mouse or keyboard for 3 minutes and he lies down for a nap. Coming back count
 
 When Minecraft (Java Edition, or Bedrock from the Microsoft Store) is open and not minimised, and no other window is in front of its hotbar, he walks along the top of the hotbar instead of the taskbar. He works out where the hotbar is the same way Minecraft does, from the window's size and the GUI scale in the game's `options.txt` (from its `--gameDir`, or the usual `.minecraft` folder), so nothing reads the screen. `Squib.exe --find-hotbar` writes what he works out to `%TEMP%\squib-hotbar.txt`, for checking.
 
-There he gets his diamond gear and does everything in [Minecraft](#minecraft-1) (needs **app modes** on). With **walk on minecraft's hotbar** off he stays on the taskbar; when Minecraft is the window in front he sits on a cloud like in other games, still with his gear.
+There he gets his diamond gear and does everything in [Minecraft](#minecraft-1) (needs **app modes** on). With **walk on minecraft's hotbar** off he stays on the taskbar, still with his gear when Minecraft is the window in front.
 
 ### App modes on Windows
 
@@ -417,7 +417,7 @@ Once a second he looks at the window in front of everything:
 3. Anything else **fullscreen** counts as a game.
 4. The desktop, the taskbar and everything else: HOME.
 
-Minecraft is GAME, with his gear. Each mode does what it does on the phone (see [Modes](#modes)), with two changes so he stays out of the way: the perches are up top a quarter of the way in from the left (games) or the right (chat, maps, reading) instead of in the corners, so he never sits on a window's close button, and WATCH sits him in the bottom-right corner above the taskbar.
+Minecraft is GAME, with his gear. Each mode does what it does on the phone (see [Modes](#modes)), except that on Windows **modes never move him**. On the phone he goes to a spot for some modes (a cloud up top for chat, maps, reading and games, the corner for videos), but the window in front of a computer changes all the time, so there he'd jump around the screen every few seconds. On Windows he stays where he is on the taskbar, and the mode only changes what he does there (popcorn, texting, staying quiet, bopping along, and so on). A trick that needs a cloud (fishing, from **pick a trick...**) puts the cloud just above him, and he comes back down after.
 
 | mode | browser tab titles with | programs |
 |---|---|---|
@@ -438,7 +438,7 @@ All in `%APPDATA%\Squib`:
 
 - `prefs.txt`: his stats and settings. The first time this version runs, it copies the stats and settings from `memory.txt` (the first Windows Squib's file), which it leaves as it was.
 - `squib.json`: the last lines downloaded from GitHub.
-- `crash.txt`: only if he ever crashes, with why.
+- `squib-log.txt`: his log, like the phone's: what he noticed and decided, and why (app modes, clicks, activities, bedtime). The last 1 MB or so; the one before is `squib-log.old.txt`. Programs are logged by name, never whole page titles.
 
 ### Command line
 

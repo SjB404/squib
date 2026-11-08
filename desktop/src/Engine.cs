@@ -1,4 +1,4 @@
-// The desktop's versions of the engine pieces that are Android-specific on the phone (Apps, Prefs,
+// The desktop's versions of the engine pieces that are Android-specific on the phone (Apps, Trace,
 // Lines lookups), plus the hooks the generated SquibView calls (see desktop/port/patches.txt).
 
 using System;
@@ -106,6 +106,46 @@ namespace Squib.Engine
         }
     }
 
+    // The mouse, handed to the engine as touches in the order a phone sends them. WPF raises a
+    // mouse move as soon as the window takes mouse capture, and it used to reach the engine before
+    // the touch-down: with the last click's start point still stored, that looked like a long drag,
+    // so he jumped across the screen and was left in DRAG (arms wiggling) with no drag to end it.
+    public sealed class Touch
+    {
+        readonly SquibView v;
+        bool down;
+        public Touch(SquibView v) { this.v = v; }
+        public bool IsDown { get { return down; } }
+
+        public void Press(long time, float x, float y)
+        {
+            down = true;
+            v.onHandleTouch(MotionEvent.obtain(time, MotionEvent.ACTION_DOWN, x, y));
+        }
+
+        // Moves only count between a press and its release.
+        public void Move(long time, float x, float y)
+        {
+            if (down) v.onHandleTouch(MotionEvent.obtain(time, MotionEvent.ACTION_MOVE, x, y));
+        }
+
+        public void Release(long time, float x, float y, bool cancel)
+        {
+            if (!down) return;
+            down = false;
+            v.onHandleTouch(MotionEvent.obtain(time, cancel ? MotionEvent.ACTION_CANCEL : MotionEvent.ACTION_UP, x, y));
+            Unstick();
+        }
+
+        // Nothing holds him, yet he's shown as carried: let him drop instead of hanging there.
+        public void Unstick()
+        {
+            if (down || v.dragging || v.motion != SquibView.Motion.DRAG) return;
+            Trace.w("touch", "in DRAG with nothing holding him: drops");
+            v.setMotion(SquibView.Motion.FALL);
+        }
+    }
+
     public partial class SquibView
     {
         Context context;
@@ -121,43 +161,28 @@ namespace Squib.Engine
         public Rect hotbar;
         /** Where the cursor is, so his eyes can follow it (null: don't). */
         public float[] cursor;
-        /** Where the perch clouds go across the top, as fractions of the width (GAME on the left, the rest right). */
-        public float perchLeft = 0.25f, perchRight = 0.75f;
-
-        // The phone puts him by the nav bar and perches him in the top corners. On the desktop the
-        // floor is the top of the taskbar (or Minecraft's hotbar), and the perches are further in
-        // from the corners so he doesn't sit on windows' close buttons.
+        // The phone moves him to a spot for each app mode (a cloud in a top corner for chat, maps,
+        // reading and games, the bottom-right corner for videos). On a computer the window in front
+        // changes all the time, so that had him jumping around the screen every few seconds. Here he
+        // stays where he is, on the taskbar (or Minecraft's hotbar), in every mode; the modes only
+        // change what he does. A trick that needs a cloud (fishing) puts one just above him.
         bool deskPlace()
         {
             float edge = 8 * d;
             float left = edge - 2 * S, right = screenW - edge - 26 * S;
             float floor = screenH;
-            float perchY = statusBar + 14 * d + 20 * S;
             perched = false;
             if (hotbar != null && forcePlace == 0)
             {
                 setFloor(hotbar.top, hotbar.left - 2 * S, hotbar.right - 26 * S);
                 return true;
             }
-            int spot; // 0 floor, 1 perch right, 2 perch left, 3 bottom-right corner
-            if (forcePlace != 0) spot = forcePlace == 1 ? 1 : 0;
-            else
-            {
-                switch (kindNow())
-                {
-                    case Apps.Kind.WATCH: spot = 3; break;
-                    case Apps.Kind.CHAT: case Apps.Kind.NAV: case Apps.Kind.READ: spot = 1; break;
-                    case Apps.Kind.GAME: spot = 2; break;
-                    default: spot = 0; break;
-                }
-            }
-            if (spot == 1 || spot == 2)
+            if (forcePlace == 1)
             {
                 perched = true;
-                float mid = screenW * (spot == 1 ? perchRight : perchLeft) - 14 * S;
-                setFloor(perchY, mid - 12 * d, mid + 12 * d);
+                float x = clamp(posX, left + 12 * d, right - 12 * d);
+                setFloor(floor - 40 * d, x - 12 * d, x + 12 * d);
             }
-            else if (spot == 3) setFloor(floor, right - 12 * d, right);
             else setFloor(floor, left, right);
             return true;
         }
