@@ -34,7 +34,7 @@ final class Fun {
             LAST_ACTIVITY = 40,
             // quick fidgets (their own timer)
             STRETCH = 41, SPIN = 42, TRIP = 43, SCRATCH = 44, YAWN = 45, SPINNER = 46, HICCUP = 47, SHAKE = 48,
-            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58, TOP = 59, RANT = 60,
+            WHISTLE = 49, COIN = 50, STRESSBALL = 51, DICE = 52, PEN = 53, CARDS = 54, BUBBLEWRAP = 55, TEXT = 56, TOSS = 57, SPRING = 58, TOP = 59, RANT = 60, PINWHEEL = 61,
             FIRST_FIDGET = 41;
 
     /** Name of each activity. Also the name of its line group in squib.json. */
@@ -43,17 +43,17 @@ final class Fun {
             "BALLOON", "MAGIC", "STARGAZE", "SNEEZE", "JUMPROPE", "PAINT", "SELFIE", "PARTY",
             "GUM", "CAMPFIRE", "DRUMS", "HULA", "BOOMERANG", "GARDEN", "BOWLING", "KARATE", "WORKOUT", "FRIEND",
             "BLOCKS", "MAIL", "MEDITATE", "CUBE", "PHONE",
-            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING", "TOP", "RANT"};
+            "STRETCH", "SPIN", "TRIP", "SCRATCH", "YAWN", "SPINNER", "HICCUP", "SHAKE", "WHISTLE", "COIN", "STRESSBALL", "DICE", "PEN", "CARDS", "BUBBLEWRAP", "TEXT", "TOSS", "SPRING", "TOP", "RANT", "PINWHEEL"};
 
     static final int ANY = 0, FLOOR = 1, PERCH = 2;
     /** Where each activity can happen: anywhere, only on the floor, or only perched on a cloud. */
     static final int[] WHERE = {ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, PERCH, ANY, FLOOR, ANY, ANY, ANY,
             FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, FLOOR, FLOOR, FLOOR, ANY, FLOOR, ANY, ANY, ANY, ANY,
-            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY};
+            ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY, FLOOR, ANY, ANY, ANY, ANY};
     /** How likely each activity is, before app-mode and time-of-day adjustments. */
     static final int[] WEIGHT = {0, 3, 2, 3, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 6, 1, 2, 2, 2, 2,
             5, 1, 2, 2, 2, 25, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
-            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4, 5, 3};
+            2, 3, 3, 2, 3, 2, 7, 2, 2, 2, 4, 6, 4, 5, 4, 3, 0, 4, 4, 5, 3, 4};
 
     // ---------- tunable from squib.json "settings" ----------
     static double scrollCheckMinutes = 15;
@@ -222,6 +222,7 @@ final class Fun {
     static int topColor;
     /** What he's ranting about (a RANT line), said after the opener. */
     static String rantTopic;
+    static int pinColor;
 
     // ---------- phone: scrolls along with you, shows you funny things ----------
     static final String[] FUNNY = {"CAT", "PIGEON", "TOAST", "CAR", "DOG", "RACCOON", "PLANT"};
@@ -568,6 +569,7 @@ final class Fun {
             case TOSS: return new String[]{"gets them in", "misses"};
             case SPRING: return SPRING_MODES;
             case TOP: return Props.PAIR_NAMES;
+            case PINWHEEL: return Props.PAIR_NAMES;
             default: return null;
         }
     }
@@ -1213,6 +1215,13 @@ final class Fun {
                 newWrap();
                 nextEvent = t + rand(0.5, 1.2); // looks it over first
                 actEnd = t + span(6, 240); // one sheet, or a few minutes of sheets
+                break;
+            case PINWHEEL:
+                pinColor = choose(Props.PAIRS.length);
+                spinAngle = 0;
+                spinVel = 0;
+                nextEvent = t + rand(0.6, 1.2); // holds it up first
+                actEnd = t + span(5, 150);
                 break;
             case RANT:
                 // "you know what bugs me?", then the thing, then maybe "anyway." Annoyed (the anger mark) until the end.
@@ -2847,6 +2856,27 @@ final class Fun {
                 }
                 break;
             }
+            case PINWHEEL: {
+                // holds it up and blows on it now and then; it spins up and slows down (spinAngle in quarter turns)
+                arm(v, right, 2);
+                v.lookX = v.facing;
+                v.lookY = -1;
+                if (t >= nextEvent && t < actEnd - 1.5) {
+                    nextEvent = t + rand(1.4, 4.5);
+                    spinVel = Math.min(14, spinVel + rand(6, 10));
+                    v.kick(-1);
+                    float bx = sx(v, right ? 20 : 8), by = sy(v, top(v) + 4, v.lift());
+                    for (int i = 0; i < 3; i++) {
+                        puff(v, "SWOOSH", bx, by, v.facing * (90 + 40 * i) * d, -(50 + 25 * i) * d, 0.3f, 0, S);
+                    }
+                }
+                spinVel *= Math.pow(0.45, dt);
+                spinAngle += spinVel * dt;
+                if ((t > actEnd && spinVel < 0.6) || t > actEnd + 8) {
+                    end(v);
+                }
+                break;
+            }
             case RANT: {
                 boolean done = v.speech == null || !v.talking;
                 if (phase < 2) {
@@ -4418,6 +4448,14 @@ final class Fun {
                 } else {
                     drawBmp(c, b, ox - 2.5f * S, oy - 2.5f * S, S, 255);
                 }
+                break;
+            }
+            case PINWHEEL: {
+                int hx = handPx(v, right), hy = handPy(v, right);
+                // the stick, 5 of his pixels up from his hand, and the head on top
+                rectT(c, sx(v, hx), sy(v, hy - 4, lift), sx(v, hx + 1), sy(v, hy + 1, lift), Art.color('k'), 255);
+                Bitmap[] b = bmp("PINWHEEL" + pinColor, Props.pinwheelRows(pinColor));
+                drawBmp(c, b[(((int) Math.floor(spinAngle)) & 1) == 0 ? 0 : 2], sx(v, hx - 3), sy(v, hy - 11, lift), S, 255);
                 break;
             }
             case TOP: {

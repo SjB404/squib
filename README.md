@@ -2,8 +2,8 @@
 
 A pixel squid that lives on your phone and your computer. He walks around, fidgets, does activities, and reacts to whatever app you have open.
 
-- **Phone app:** [apk/Squib.apk](apk/Squib.apk) (1.20.0). Installs over earlier versions.
-- **Windows app:** [desktop/Squib.exe](desktop/Squib.exe) (1.20.0). Run it from anywhere, nothing to install.
+- **Phone app:** [apk/Squib.apk](apk/Squib.apk) (1.20.0; 1.21.0 is in the code and needs an APK build, see [Building](#building)). Installs over earlier versions.
+- **Windows app:** [desktop/Squib.exe](desktop/Squib.exe) (1.21.0). Run it from anywhere, nothing to install.
 - **His lines:** `squib.json`. Both apps download it from here, so edits show up without a new app.
 - **Everything else** (all modes, activities, settings, line groups, Windows details): [docs/REFERENCE.md](docs/REFERENCE.md).
 

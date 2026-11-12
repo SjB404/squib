@@ -1395,6 +1395,14 @@ final class Lines {
             "that's all. carry on.",
             "anyway. moving on.",
             "ok. better now."};
+    static String[] PINWHEEL = {
+            "*blows*",
+            "it goes round.",
+            "pinwheel.",
+            "that one went fast.",
+            "no wind in here. just me.",
+            "round and round.",
+            "it needs a lot of blowing indoors."};
     static String[] PEN = {
             "*click click*",
             "*click*",

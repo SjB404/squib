@@ -157,7 +157,7 @@ namespace Squib.Engine
 
         // ---- set by the desktop host ----
 
-        /** Minecraft's hotbar while you play, in screen pixels: he stands on it instead of the taskbar. */
+        /** What he stands on instead of the taskbar, in screen pixels: Minecraft's hotbar while you play, or Discord's message bar while it's in front. */
         public Rect hotbar;
         /** Where the cursor is, so his eyes can follow it (null: don't). */
         public float[] cursor;
@@ -171,20 +171,42 @@ namespace Squib.Engine
             float edge = 8 * d;
             float left = edge - 2 * S, right = screenW - edge - 26 * S;
             float floor = screenH;
+            float oldX = posX, oldY = posY;
             perched = false;
             if (hotbar != null && forcePlace == 0)
-            {
                 setFloor(hotbar.top, hotbar.left - 2 * S, hotbar.right - 26 * S);
-                return true;
-            }
-            if (forcePlace == 1)
+            else if (forcePlace == 1)
             {
                 perched = true;
                 float x = clamp(posX, left + 12 * d, right - 12 * d);
                 setFloor(floor - 40 * d, x - 12 * d, x + 12 * d);
             }
             else setFloor(floor, left, right);
+            arrive(oldX, oldY);
             return true;
+        }
+
+        // setFloor puts him on a new floor at once. On a computer the floor moves a lot (Minecraft or Discord
+        // coming to the front and going, the message bar growing as you type), so instead: he drops down to a
+        // lower floor, steps up a small rise, and poofs across anything bigger.
+        void arrive(float oldX, float oldY)
+        {
+            float dx = posX - oldX, dy = posY - oldY;
+            if (System.Math.Abs(dx) < 1 && System.Math.Abs(dy) < 1) return;
+            bool free = (motion == Motion.IDLE || motion == Motion.WANDER || motion == Motion.CHASE) && Fun.act == Fun.NONE;
+            if (dy > 0 && System.Math.Abs(dx) < 2 * d && free)
+            {
+                Trace.d("floor", "drops " + (int)dy + " px to the new floor");
+                posY = oldY;
+                vx = 0;
+                vy = 0;
+                setMotion(Motion.FALL);
+                return;
+            }
+            if (dy < 0 && -dy <= 30 * d && System.Math.Abs(dx) < 2 * d) return; // a small step up
+            Trace.d("floor", "poofs " + (int)dx + "," + (int)dy + " px to the new floor");
+            Fun.poof(this, oldX + 14 * S, oldY - 8 * S);
+            Fun.poof(this, posX + 14 * S, posY - 8 * S);
         }
 
         // The phone has no cursor, so he looks straight ahead; on the desktop he watches the cursor.

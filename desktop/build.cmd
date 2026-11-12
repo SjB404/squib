@@ -20,6 +20,8 @@ build\port.exe .. || goto fail
   /r:"%FW%\System.Management.dll" ^
   /r:"%FW%\System.Web.Extensions.dll" ^
   /r:"%FW%\System.Windows.Forms.dll" ^
+  /r:"%FW%\WPF\UIAutomationClient.dll" ^
+  /r:"%FW%\WPF\UIAutomationTypes.dll" ^
   gen\*.cs src\*.cs || goto fail
 echo built desktop\Squib.exe
 exit /b 0

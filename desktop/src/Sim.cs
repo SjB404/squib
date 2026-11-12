@@ -410,6 +410,36 @@ namespace Squib
                 tw.Release(SystemClock.Fake.Value, x, y, false);
             }
             Say("woken: booped or petted while asleep, he wakes up annoyed with no hearts");
+            Floors();
+        }
+
+        // His floor moving (Discord or Minecraft coming to the front and going, the message bar growing):
+        // never a silent jump. Up onto the bar: a poof at both ends. A small rise: a step. Back down: he falls.
+        static void Floors()
+        {
+            SquibView v = Fresh();
+            RunFor(v, 1);
+            float x0 = v.posX, barTop = H - 75 * v.d;
+            int before = v.particles.size();
+            v.hotbar = new Rect((int)(x0 - 200 * v.d), (int)barTop, (int)(x0 + 300 * v.d), (int)(barTop + 46 * v.d));
+            v.place();
+            if (System.Math.Abs(v.posY - barTop) > 0.5f || v.particles.size() < before + 12) throw new Exception("didn't poof up onto the bar: y " + v.posY + ", " + (v.particles.size() - before) + " puffs");
+            RunFor(v, 1);
+            v.hotbar = new Rect(v.hotbar.left, (int)(barTop - 22 * v.d), v.hotbar.right, v.hotbar.bottom); // a second line of text
+            v.place();
+            if (System.Math.Abs(v.posY - (barTop - 22 * v.d)) > 1) throw new Exception("didn't step up with the bar");
+            float lastY = v.posY;
+            v.hotbar = null; // Discord went to the back
+            v.place();
+            if (v.motion != SquibView.Motion.FALL || System.Math.Abs(v.posY - lastY) > 0.5f) throw new Exception("jumped down instead of falling: " + v.motion + ", y " + v.posY);
+            for (int i = 0; i < 120; i++)
+            {
+                SystemClock.Fake += 33; v.step();
+                if (System.Math.Abs(v.posY - lastY) > 12 * v.d) throw new Exception("fell too fast: " + lastY + " to " + v.posY);
+                lastY = v.posY;
+            }
+            if (System.Math.Abs(v.posY - H) > 0.5f || v.motion == SquibView.Motion.FALL) throw new Exception("didn't land back on the taskbar: y " + v.posY + ", " + v.motion);
+            Say("floors: poofs up onto a message bar, steps up as it grows, falls back to the taskbar when it goes");
         }
 
         static void Stress(double hours)

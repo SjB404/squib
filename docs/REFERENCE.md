@@ -31,7 +31,7 @@ Both sign with `signing/squib-debug.keystore`, the key every Squib build has use
 Everything squib does (walking, talking, all the activities and fidgets, his props and their versions, Minecraft gear, hats, bedtime, app modes, the line picker) is the phone app's Java in `app/src/main/java/com/squib/buddy`. The Windows app doesn't have its own copy: `desktop\build.cmd` first runs `desktop/port`, which turns that Java into C# in `desktop/gen` (`SquibView`, `Fun`, `Art`, `Props`, `Pick`, `PixelFont`, plus `Lines` from `squib.json` and the version number from `app/build.gradle`), then builds it together with the Windows parts in `desktop/src`. So:
 
 - **A change to squib, made once in the Java, shows up in both apps** the next time each is built. Bump the version in `app/build.gradle` and both apps get it.
-- **What's only on one platform stays out of the shared code.** Android's side: the overlay service, settings screen, notification and usage access (`SquibService`, `MainActivity`, `Apps`, `Remote`, `Pause`). Windows' side: the window, mouse, menu, tray icon, app modes for Windows, Minecraft's hotbar and the focus timer (`desktop/src`). Small differences inside the shared code (where his floor is, his eyes following the cursor, the greeting's wording) are hooks listed in `desktop/port/patches.txt`.
+- **What's only on one platform stays out of the shared code.** Android's side: the overlay service, settings screen, notification and usage access (`SquibService`, `MainActivity`, `Apps`, `Remote`, `Pause`). Windows' side: the window, mouse, menu, tray icon, app modes for Windows, Minecraft's hotbar, Discord's message bar and the focus timer (`desktop/src`). Small differences inside the shared code (where his floor is, his eyes following the cursor, the greeting's wording) are hooks listed in `desktop/port/patches.txt`.
 - `desktop/src/Java.cs` and `desktop/src/Android.cs` stand in for the bits of Java and Android the engine uses, with the same behaviour (Java's rounding, its random number generator, its string hashes, Android's drawing).
 - **If the port fails,** it says why. Usually a patch in `desktop/port/patches.txt` no longer matches because the Java around it changed: update the patch's text to match the new `desktop/gen` output. Never edit `desktop/gen` by hand: it's rewritten on every build (and not committed).
 
@@ -60,7 +60,7 @@ The port understands the plain Java squib is written in. Keep to it: Java 8, no 
 
 ### lines
 
-There are 1323 lines in 156 groups. His tone is neutral and dry: plain observations, not rude, not preachy, not cute. The exceptions are being woken up (WOKE_GRUMPY) and rants (RANT), where he is openly annoyed, but at things, never at you. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
+There are 1330 lines in 157 groups. His tone is neutral and dry: plain observations, not rude, not preachy, not cute. The exceptions are being woken up (WOKE_GRUMPY) and rants (RANT), where he is openly annoyed, but at things, never at you. Each group **replaces** the built-in lines for that group. A group that's missing or empty keeps the built-in lines. Groups the app doesn't know about are ignored, so older versions of the app still work with a newer file.
 
 **No repeats:** each group works like a shuffled deck. Every line in it gets said once before any line comes around again. He also remembers the last 400 lines he said (saved on the phone, so restarting him doesn't reset it), and when a deck gets reshuffled, the most recent ones go to the bottom.
 
@@ -316,7 +316,7 @@ Since 1.20.0, booping or petting him while he's asleep (bedtime, a nap, or nappi
 
 ### Fidgets
 
-Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, TOSS, SPRING, TOP or RANT. He only says something about 1 time in 8 (RANT always talks). SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, SPRING and TOP can go on for minutes. Since 1.19.0, TEXT isn't a random fidget any more: he only texts in messaging apps, or when you pick it in his settings.
+Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` / `fidgetGapMax`), he does something small: STRETCH (arms up), SPIN, TRIP (stumbles and sits down for a second, bottom of the screen only), SCRATCH (scratches his head, thinking), YAWN, SPINNER, HICCUP (2 to 5 of them), SHAKE (shakes himself off like a wet dog), WHISTLE, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, TOSS, SPRING, TOP, RANT or PINWHEEL. He only says something about 1 time in 8 (RANT always talks). SPINNER, COIN, STRESSBALL, DICE, PEN, CARDS, BUBBLEWRAP, SPRING, TOP and PINWHEEL can go on for minutes. Since 1.19.0, TEXT isn't a random fidget any more: he only texts in messaging apps, or when you pick it in his settings.
 
 - **SPINNER:** a fidget spinner with three arms, two arms, four arms, a ring, or a star, in random colours. He flicks it, it spins fast enough to blur, then slows down, and he flicks it again, from a few seconds up to about 5 minutes. Now and then he tosses it up while it spins, or moves it to his other hand. Between flicks he sometimes just stares at nothing.
 - **COIN:** flips a gold, silver or copper coin, once or up to about 15 times in a row. It spins in the air and he catches it (heads or tails), or now and then misses and it bounces on the floor, which ends it.
@@ -330,6 +330,7 @@ Between activities, 1.5 to 5 minutes after the last fidget ends (`fidgetGapMin` 
 - **SPRING (1.19.0):** pours a spring toy from one hand to the other, the rings arching over his head, then back, since it's upside down now. Colours are picked each time: one colour, two colours striped, a run of colours, or gold or silver. Now and then it slips halfway over, the rings fall to the floor, and he looks annoyed. A few seconds to a few minutes. Lines: SPRING.
 - **TOP:** winds up a spinning top (any of the 11 colours) and lets it go on the floor in front of him (behind him if he's at the edge of the screen). Its stripes turn as it spins, it drifts about, bumping off him and the edges, and it wobbles more and more as it slows down, then tips onto its side. He watches it the whole time. Spins last from 3 seconds to about 40, and he often picks it up and spins it again, up to 8 times.
 - **RANT (1.20.0):** gets worked up about something: a RANT_START opener ("you know what pisses me off?"), then a RANT line about everyday annoyances (chargers that only work at one angle, ads louder than the video, never about you) while he waves his arms and stamps, with the anger mark. Then he calms down, sometimes with a RANT_END line ("anyway."). Not when chatty is off.
+- **PINWHEEL (1.21.0):** holds up a pinwheel on a stick (any of the 11 colours, blades in its light and dark shades) and blows on it now and then. It spins up with each blow and slows down in between. A few seconds to a couple of minutes.
 ## Minecraft
 
 In Minecraft (and the launchers in the `minecraft` list) he gets diamond gear. Only diamond, never netherite.
@@ -360,7 +361,7 @@ Run `desktop\Squib.exe` (from anywhere). Only one Squib runs at a time.
 
 ### Where he lives
 
-He walks along the top of the taskbar (the bottom of the main screen's free area, wherever the taskbar is), on top of every window. His window never takes focus, so he doesn't interrupt typing or games, and clicks go straight through the empty space around him. While Minecraft is open he stands on its hotbar instead (see [Minecraft on Windows](#minecraft-on-windows)).
+He walks along the top of the taskbar (the bottom of the main screen's free area, wherever the taskbar is), on top of every window. His window never takes focus, so he doesn't interrupt typing or games, and clicks go straight through the empty space around him. While Minecraft is open he stands on its hotbar instead (see [Minecraft on Windows](#minecraft-on-windows)), and while Discord is in front, on its message bar (see [Discord on Windows](#discord-on-windows)).
 
 ### Mouse
 
@@ -390,6 +391,7 @@ Right-click him (or click the tray icon). Click anywhere else, or press Esc, to 
 - **size** (small, medium, large) and **text size** (small, medium, large, for his speech bubbles and this menu): click to change
 - **app modes:** on, he changes what he does with the window in front ([App modes on Windows](#app-modes-on-windows)). Off, he acts as if you're on the desktop all the time
 - **walk on minecraft's hotbar**
+- **walk on discord's message bar**
 - **chatty:** off, he doesn't talk on his own (no chatter, activity lines, mode lines or cursor lines). He still answers when you click, pet or feed him, and still does reminders
 - **break reminders and check-ins:** the 50-minute BREAK reminder and the SCROLL_LONG check-ins
 - **click-through:** clicks go straight through him, like he isn't there. Use the tray icon to get his menu back
@@ -410,6 +412,12 @@ No mouse or keyboard for 3 minutes and he lies down for a nap. Coming back count
 When Minecraft (Java Edition, or Bedrock from the Microsoft Store) is open and not minimised, and no other window is in front of its hotbar, he walks along the top of the hotbar instead of the taskbar. He works out where the hotbar is the same way Minecraft does, from the window's size and the GUI scale in the game's `options.txt` (from its `--gameDir`, or the usual `.minecraft` folder), so nothing reads the screen. `Squib.exe --find-hotbar` writes what he works out to `%TEMP%\squib-hotbar.txt`, for checking.
 
 There he gets his diamond gear and does everything in [Minecraft](#minecraft-1) (needs **app modes** on). With **walk on minecraft's hotbar** off he stays on the taskbar, still with his gear when Minecraft is the window in front.
+
+### Discord on Windows
+
+Since 1.21.0, while Discord (or Discord PTB or Canary) is the window in front, on the main screen and not minimised, he walks along the top of its message bar, the rounded box you type in, instead of the taskbar. When the bar grows with a longer message he steps up with it, and when you switch to another window he falls back down to the taskbar. Getting up there from further away is a poof.
+
+He finds the bar through UI Automation, the accessibility API screen readers use, so it follows Discord's real layout whatever the theme, zoom or window size. Nothing reads the screen. The first time he asks, Discord switches its accessibility support on, which can make it use a bit more CPU; turn **walk on discord's message bar** off in his menu and he stops asking. `Squib.exe --find-chatbar` writes what he finds in the open Discord window to `%TEMP%\squib-chatbar.txt`, for checking.
 
 ### App modes on Windows
 
@@ -450,5 +458,6 @@ All in `%APPDATA%\Squib`:
 | `Squib.exe` | starts him. If he's already running: brings him back from a pause (or he says hi) |
 | `Squib.exe --quit` | closes the running Squib, saving his stats |
 | `Squib.exe --find-hotbar` | see [Minecraft on Windows](#minecraft-on-windows) |
+| `Squib.exe --find-chatbar` | see [Discord on Windows](#discord-on-windows) |
 | `Squib.exe --demo` | goes through talk, feed, a fidget spinner and his menu in the first 30 seconds, for checking how they look |
 | `Squib.exe --sim ...` | runs him with a fake clock and no window: see [Building](#building) |

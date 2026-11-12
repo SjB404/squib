@@ -23,6 +23,7 @@ namespace Squib
         static int Main(string[] args)
         {
             if (Array.IndexOf(args, "--find-hotbar") >= 0) { GameWatch.Report(); return 0; }
+            if (Array.IndexOf(args, "--find-chatbar") >= 0) { ChatBar.Report(); return 0; }
             if (args.Length > 0 && args[0] == "--sim") { Native.AttachConsole(-1); return Sim.Run(args); }
             bool fresh;
             var mutex = new System.Threading.Mutex(true, MutexName, out fresh);

@@ -40,6 +40,7 @@ namespace Squib
         readonly bool demo;
 
         double now, last, floorCheckAt, modeCheckAt, saveAt, topmostAt, nextQuipAt = 20;
+        bool onGame; // standing on Minecraft's hotbar (not Discord's message bar)
         bool paused, leaving, away, wigglePet, menuMouseWasDown, shown;
         DateTime pauseUntil;
         double leaveAt, awayFor, petEnergy, cursorNearFor, focusLeft;
@@ -85,6 +86,7 @@ namespace Squib
                 MeasureScreen();
                 v = new E.SquibView(new E.Context((float)scale));
                 touch = new E.Touch(v);
+                ChatBar.Watch(prefs.getBoolean("chatBar", true));
                 v.onScreen(areaW, areaH, 0, 0);
                 tray = new Tray(this);
                 last = Clock();
@@ -250,7 +252,8 @@ namespace Squib
 
         // ---------------------------------------------------------------- the world around him
 
-        // A few times a second: stand on Minecraft's hotbar while the game is open and nothing covers it.
+        // A few times a second: stand on Minecraft's hotbar while the game is open and nothing covers it,
+        // or on Discord's message bar while Discord is the window in front (see ChatBar.cs).
         void UpdateFloor()
         {
             E.Rect hb = null;
@@ -262,6 +265,15 @@ namespace Squib
                     var bar = GameWatch.Hotbar(game);
                     if (!GameWatch.Covered(game, bar)) hb = new E.Rect(bar.Left - areaX, bar.Top - areaY, bar.Right - areaX, bar.Bottom - areaY);
                 }
+            }
+            onGame = hb != null;
+            var chat = hb == null ? ChatBar.Bar : null;
+            if (chat != null)
+            {
+                var c = chat.Value;
+                // only on the main screen, where he lives, and with room above it for him
+                if (c.Left - areaX >= -areaW / 2 && c.Right - areaX <= areaW * 3 / 2 && c.Top - areaY > 40 * v.d && c.Top - areaY <= areaH)
+                    hb = new E.Rect(Math.Max(0, c.Left - areaX), c.Top - areaY, Math.Min(areaW, c.Right - areaX), c.Bottom - areaY);
             }
             E.Rect cur = v.hotbar;
             bool same = hb == null ? cur == null : cur != null && cur.left == hb.left && cur.top == hb.top && cur.right == hb.right;
@@ -277,7 +289,7 @@ namespace Squib
             IntPtr fg = Native.GetForegroundWindow();
             if (fg == IntPtr.Zero || fg == hwnd) return;
             string id;
-            if (v.hotbar != null || GameWatch.IsMinecraft(fg)) id = "com.mojang.minecraftpe";
+            if (onGame || GameWatch.IsMinecraft(fg)) id = "com.mojang.minecraftpe";
             else
             {
                 string program = Native.ProcessName(fg);
@@ -488,6 +500,7 @@ namespace Squib
             }).KeepOpen = true;
             p.Toggle("app modes (what's on screen changes what he does)", () => prefs.getBoolean("appModes", true), () => Flip("appModes", true));
             p.Toggle("walk on minecraft's hotbar", () => prefs.getBoolean("hotbar", true), () => { Flip("hotbar", true); UpdateFloor(); });
+            p.Toggle("walk on discord's message bar", () => prefs.getBoolean("chatBar", true), () => { Flip("chatBar", true); ChatBar.Watch(prefs.getBoolean("chatBar", true)); UpdateFloor(); });
             p.Toggle("chatty", () => prefs.getBoolean("chatty", true), () => Flip("chatty", true));
             p.Toggle("break reminders and check-ins", () => prefs.getBoolean("reminders", true), () => Flip("reminders", true));
             p.Toggle("click-through (use the tray icon for this menu)", () => prefs.getBoolean("clickThrough", false), () =>

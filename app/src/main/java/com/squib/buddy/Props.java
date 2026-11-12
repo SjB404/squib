@@ -47,6 +47,41 @@ final class Props {
         return new int[]{a, b};
     }
 
+    // ================= pinwheel =================
+
+    /**
+     * A pinwheel's head in colour pair `pair`, 7 x 7: four blades round a grey pin, light and dark in turn. A
+     * quarter turn gives the same shape with the colours swapped, so flicking between it and its quarter turn
+     * (bmp's cw copy) makes it spin.
+     */
+    static String[] pinwheelRows(int pair) {
+        char light = light(pair), dark = PAIRS[pair].charAt(1);
+        char[][] g = new char[7][7];
+        for (int y = 0; y < 7; y++) {
+            for (int x = 0; x < 7; x++) {
+                g[y][x] = '.';
+            }
+        }
+        int[][] blade = {{0, 0}, {1, 0}, {2, 0}, {1, 1}, {2, 1}, {2, 2}}; // the top left one, along the top
+        for (int q = 0; q < 4; q++) {
+            for (int[] p : blade) {
+                int x = p[0], y = p[1];
+                for (int k = 0; k < q; k++) { // turned a quarter, q times
+                    int nx = 6 - y;
+                    y = x;
+                    x = nx;
+                }
+                g[y][x] = q % 2 == 0 ? light : dark;
+            }
+        }
+        g[3][3] = 'h';
+        String[] rows = new String[7];
+        for (int y = 0; y < 7; y++) {
+            rows[y] = new String(g[y]);
+        }
+        return rows;
+    }
+
     // ================= spinning top =================
 
     /**
